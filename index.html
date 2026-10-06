@@ -1,0 +1,1616 @@
+<!doctype html>
+<html lang="th" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CookieRunBot</title>
+<link rel="icon" type="image/png" href="logo.png?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700;800&family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============ theme: neon arcade ============ */
+  :root {
+    --bg:#f1eefb; --bg2:#f8f6ff; --side:#f9f7ff; --card:rgba(255,255,255,.78); --card2:rgba(246,242,255,.9); --border:#ddd3f5; --line:rgba(110,70,200,.14);
+    --text:#1b1330; --muted:#6f6590; --accent:#8b5cf6; --accent2:#d946ef; --accent3:#22d3ee; --accent-hover:#9d74ff; --accent-ink:#6d28d9;
+    --on-accent:#fff; --nav-active:rgba(139,92,246,.12); --danger:#ff3b5c; --ok:#14d17a; --off:#cfc6e6; --field:#fff; --log:#0d0a18;
+    --logtext:#ece6ff; --screen:#06040c; --err:#ff5a4a; --glow:rgba(139,92,246,.38); --glow2:rgba(217,70,239,.3);
+    --shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 12px 32px -18px rgba(60,30,130,.35);
+    --grad:linear-gradient(120deg,#6d28d9 0%,#8b5cf6 40%,#d946ef 100%);
+    --grad-cool:linear-gradient(120deg,#18c8ff,#8a5cff);
+    --num:"Chakra Petch","Kanit",sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#06040d; --bg2:#0c0818; --side:rgba(12,8,24,.85); --card:rgba(20,14,36,.62); --card2:rgba(28,20,48,.7); --border:rgba(160,110,255,.2); --line:rgba(255,255,255,.07);
+      --text:#f3eeff; --muted:#a39bbf; --accent:#a78bfa; --accent2:#e879f9; --accent3:#22d3ee; --accent-hover:#c4b5fd; --accent-ink:#c4b5fd;
+      --on-accent:#12081f; --nav-active:rgba(167,139,250,.13); --danger:#ff4d6d; --ok:#2bf59a; --off:#342c4a; --field:rgba(8,5,16,.8); --log:#040209;
+      --logtext:#e9e2ff; --screen:#000; --err:#ff8f7a; --glow:rgba(167,139,250,.5); --glow2:rgba(232,121,249,.38);
+      --shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 20px 40px -24px rgba(0,0,0,.9);
+    }
+  }
+  * { box-sizing:border-box; }
+  html, body { height:100%; }
+  body { margin:0; color:var(--text); overflow:hidden; font-size:14px; line-height:1.5;
+    font-family:"Kanit","Prompt","Leelawadee UI","Segoe UI",Tahoma,sans-serif; -webkit-font-smoothing:antialiased;
+    background:var(--bg); }
+  /* animated aurora + grid behind everything */
+  body::before { content:""; position:fixed; inset:-20%; z-index:-2; pointer-events:none;
+    background:
+      radial-gradient(40% 35% at 85% 10%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 70%),
+      radial-gradient(35% 30% at 10% 90%, color-mix(in srgb, var(--accent2) 20%, transparent), transparent 70%),
+      radial-gradient(30% 30% at 55% 55%, color-mix(in srgb, var(--accent3) 10%, transparent), transparent 70%);
+    filter:blur(10px); animation:aurora 22s ease-in-out infinite alternate; }
+  body::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.5;
+    background-image:linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:44px 44px; mask-image:radial-gradient(ellipse at 60% 30%, #000 20%, transparent 75%); }
+  @keyframes aurora { from { transform:translate(0,0) rotate(0); } to { transform:translate(-4%,3%) rotate(8deg); } }
+  [hidden] { display:none !important; }
+  ::selection { background:color-mix(in srgb, var(--accent) 40%, transparent); }
+  * { scrollbar-width:thin; scrollbar-color:color-mix(in srgb, var(--accent) 45%, transparent) transparent; }
+  ::-webkit-scrollbar { width:10px; height:10px; }
+  ::-webkit-scrollbar-thumb { background:color-mix(in srgb, var(--accent) 40%, transparent); border-radius:99px; border:3px solid transparent; background-clip:content-box; }
+  .ico { width:18px; height:18px; flex:none; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .ico.fill { fill:currentColor; stroke:none; }
+
+  /* ============ shell ============ */
+  .shell { display:grid; grid-template-columns:236px minmax(0,1fr); height:100%; }
+  .side { position:relative; padding:24px 14px 16px; display:flex; flex-direction:column; gap:22px; min-height:0;
+    background:var(--side); backdrop-filter:blur(18px) saturate(1.3); border-right:1px solid var(--border);
+    box-shadow:inset -1px 0 0 rgba(255,255,255,.03); }
+  .side::after { content:""; position:absolute; top:0; right:-1px; width:1px; height:100%;
+    background:linear-gradient(180deg, transparent, var(--accent), var(--accent2), transparent); opacity:.7; }
+  .logo { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .logo img { width:108px; height:108px; object-fit:contain; border-radius:28px;
+    filter:drop-shadow(0 0 18px var(--glow)) drop-shadow(0 0 30px var(--glow2)); animation:float 4s ease-in-out infinite; }
+  @keyframes float { 50% { transform:translateY(-6px) rotate(-3deg); } }
+  .logo b { font-family:var(--num); font-size:16px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase;
+    background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 0 10px var(--glow)); }
+  nav { display:flex; flex-direction:column; gap:4px; }
+  .nav { position:relative; font:inherit; font-size:15px; font-weight:500; display:flex; align-items:center; gap:12px; padding:9px 12px;
+    border:1px solid transparent; border-radius:14px; background:transparent; color:var(--muted); cursor:pointer; text-align:left;
+    transition:background .2s, color .2s, border-color .2s, transform .15s; }
+  .nav .ico { width:32px; height:32px; padding:7px; border-radius:10px; color:var(--accent);
+    background:color-mix(in srgb, var(--accent) 12%, transparent); transition:all .2s; }
+  .nav:hover { color:var(--text); background:color-mix(in srgb, var(--accent) 8%, transparent); transform:translateX(3px); }
+  .nav.active { color:var(--text); font-weight:600; background:linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, transparent), transparent);
+    border-color:color-mix(in srgb, var(--accent) 35%, transparent); }
+  .nav.active .ico { background:var(--grad); color:#fff; box-shadow:0 0 16px var(--glow), 0 0 4px var(--glow2); }
+  .nav.active::before { content:""; position:absolute; left:-14px; top:8px; bottom:8px; width:4px; border-radius:0 4px 4px 0;
+    background:var(--grad); box-shadow:0 0 12px var(--glow); }
+  .side-foot { margin-top:auto; font-family:var(--num); font-size:11px; letter-spacing:1px; color:var(--muted); text-align:center; padding:8px;
+    border-radius:12px; border:1px solid var(--border); background:color-mix(in srgb, var(--card) 70%, transparent); }
+
+  .main { display:flex; flex-direction:column; min-width:0; min-height:0; }
+  .content { flex:1; min-height:0; overflow:auto; padding:26px 28px 10px; }
+  .page { max-width:860px; margin:0 auto; animation:rise .35s cubic-bezier(.2,.8,.2,1); }
+  @keyframes rise { from { opacity:0; transform:translateY(10px) scale(.99); } to { opacity:1; transform:none; } }
+  .foot { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; padding:14px 28px 18px;
+    border-top:1px solid var(--border); background:color-mix(in srgb, var(--bg) 55%, transparent); backdrop-filter:blur(14px); }
+  .foot > div { display:flex; gap:10px; flex-wrap:wrap; max-width:860px; }
+
+  @media (max-width:720px) {
+    body { overflow:auto; }
+    .shell { grid-template-columns:minmax(0,1fr); height:auto; min-height:100%; }
+    .side { padding:12px 16px; gap:10px; border-right:0; border-bottom:1px solid var(--border); }
+    .side::after { display:none; }
+    .logo { flex-direction:row; }
+    .logo img { width:40px; height:40px; border-radius:12px; animation:none; }
+    nav { flex-direction:row; flex-wrap:wrap; gap:4px; }
+    .nav { padding:5px 10px 5px 6px; font-size:13.5px; gap:7px; }
+    .nav:hover { transform:none; }
+    .nav .ico { width:26px; height:26px; padding:5px; }
+    .nav.active::before { display:none; }
+    .side-foot { display:none; }
+    .content { overflow:visible; padding:16px 14px 8px; }
+    .foot { position:sticky; bottom:0; padding:10px 14px 14px; }
+  }
+
+  /* ============ cards (glass with a glowing edge) ============ */
+  .card { position:relative; background:var(--card); backdrop-filter:blur(16px) saturate(1.2); border:1px solid var(--border);
+    border-radius:20px; padding:18px 20px; margin-bottom:16px; box-shadow:var(--shadow); }
+  .card::before { content:""; position:absolute; inset:0; border-radius:inherit; padding:1px; pointer-events:none;
+    background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 55%, transparent), transparent 35%, transparent 65%, color-mix(in srgb, var(--accent2) 45%, transparent));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; opacity:.55; }
+  .head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .head h2 { font-size:22px; font-weight:700; margin:0; letter-spacing:.3px; }
+  .head p { margin:2px 0 0; color:var(--muted); }
+  .dot { width:12px; height:12px; border-radius:50%; background:var(--off); flex:none; position:relative; }
+  .dot.on { background:var(--ok); box-shadow:0 0 0 4px color-mix(in srgb, var(--ok) 20%, transparent), 0 0 18px var(--ok); }
+  .dot.on::after { content:""; position:absolute; inset:0; border-radius:50%; background:var(--ok); animation:ping 1.6s ease-out infinite; }
+  @keyframes ping { from { transform:scale(1); opacity:.8; } to { transform:scale(2.8); opacity:0; } }
+  .dot.bad { background:var(--danger); box-shadow:0 0 14px var(--danger); }
+  .title { font-weight:600; font-size:16px; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .title > span:first-child { display:inline-flex; align-items:center; gap:10px; }
+  .title .ico { width:32px; height:32px; padding:7px; border-radius:10px; color:#fff; background:var(--grad); box-shadow:0 0 14px var(--glow); }
+  .title .btn .ico, .title .btn-sm .ico { width:15px; height:15px; padding:0; background:none; color:inherit; box-shadow:none; }
+  dl { display:grid; grid-template-columns:auto minmax(0,1fr); gap:9px 16px; margin:0; }
+  dt { color:var(--muted); white-space:nowrap; }
+  dd { margin:0; min-width:0; overflow-wrap:anywhere; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { padding:3px 12px; border-radius:999px; font-size:12.5px; white-space:nowrap; font-weight:500; color:var(--accent-ink);
+    background:color-mix(in srgb, var(--accent) 12%, transparent); border:1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    box-shadow:0 0 10px -4px var(--glow); }
+  .muted { color:var(--muted); font-size:12.5px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; }
+  .steps { margin:0; padding-left:22px; color:var(--muted); font-size:13px; line-height:1.9; }
+  .steps li::marker { color:var(--accent); font-family:var(--num); font-weight:800; }
+  .steps b { color:var(--text); }
+
+  /* ============ buttons ============ */
+  .btn { font:inherit; font-weight:500; display:inline-flex; align-items:center; gap:7px; border-radius:12px; padding:7px 14px; cursor:pointer;
+    border:1px solid var(--border); background:var(--card2); color:var(--text); white-space:nowrap; backdrop-filter:blur(8px);
+    transition:transform .12s, border-color .2s, background .2s, box-shadow .2s; }
+  .btn:hover:not(:disabled) { border-color:var(--accent); box-shadow:0 0 16px -4px var(--glow); }
+  .btn:active:not(:disabled) { transform:translateY(1px) scale(.97); }
+  .btn:disabled { opacity:.4; cursor:default; }
+  .btn:focus-visible, .nav:focus-visible, .tool:focus-visible, .keep:focus-visible, input:focus-visible, select:focus-visible {
+    outline:2px solid var(--accent3); outline-offset:2px; }
+  .btn-sm { padding:5px 11px; font-size:12.5px; border-radius:10px; }
+  .btn-sm .ico { width:15px; height:15px; }
+  .btn-main { position:relative; overflow:hidden; font-weight:700; font-size:15.5px; letter-spacing:.3px; padding:12px 30px; border:0; color:#fff;
+    background:var(--grad); background-size:200% 100%; box-shadow:0 0 24px -4px var(--glow), 0 0 40px -12px var(--glow2), 0 1px 0 rgba(255,255,255,.35) inset;
+    text-shadow:0 1px 2px rgba(40,10,80,.4); animation:shift 6s linear infinite; }
+  .btn-main::after { content:""; position:absolute; top:0; left:-60%; width:40%; height:100%; transform:skewX(-20deg);
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); animation:shine 3.2s ease-in-out infinite; }
+  @keyframes shift { to { background-position:200% 0; } }
+  @keyframes shine { 0%, 60% { left:-60%; } 100% { left:130%; } }
+  .btn-main:hover:not(:disabled) { background:var(--grad); background-size:200% 100%; filter:brightness(1.08); transform:translateY(-1px); }
+  .btn-main.running { background:linear-gradient(120deg,#ff2e55,#ff6a3d,#ff2e55); background-size:200% 100%;
+    box-shadow:0 0 26px -4px rgba(255,46,85,.7); animation:shift 3s linear infinite, breathe 2s ease-in-out infinite; }
+  @keyframes breathe { 50% { box-shadow:0 0 38px 0 rgba(255,46,85,.75); } }
+  .btn-line { font-weight:600; font-size:15px; padding:11px 20px; background:var(--card); }
+  .btn-danger { border-color:color-mix(in srgb, var(--danger) 55%, transparent); color:var(--danger); background:transparent; }
+  .btn-danger:hover:not(:disabled) { border-color:var(--danger); background:color-mix(in srgb, var(--danger) 12%, transparent); box-shadow:0 0 16px -4px var(--danger); }
+
+  /* ============ options ============ */
+  fieldset { border:0; margin:0; padding:0; min-width:0; }
+  fieldset:disabled .card { opacity:.55; filter:saturate(.6); }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:2px 14px; }
+  .optrow { display:flex; align-items:center; justify-content:space-between; gap:6px 12px; flex-wrap:wrap; padding:10px 0; }
+  .optrow + .optrow { border-top:1px solid var(--line); }
+  .grid2 .optrow + .optrow { border-top:0; }
+  label.opt { display:flex; align-items:flex-start; gap:12px; cursor:pointer; user-select:none; min-width:0; }
+  fieldset:disabled label.opt { cursor:default; }
+  .opt .name { display:block; font-weight:500; }
+  .opt .hint { display:block; color:var(--muted); font-size:12px; line-height:1.4; margin-top:1px; }
+  .extra { display:inline-flex; align-items:center; gap:6px; color:var(--muted); font-size:12.5px; white-space:nowrap; margin-left:56px; }
+  input.sw { appearance:none; -webkit-appearance:none; flex:none; width:44px; height:24px; margin:0; border-radius:999px;
+    background:var(--off); position:relative; cursor:inherit; transition:background .25s, box-shadow .25s; box-shadow:inset 0 2px 4px rgba(0,0,0,.3); }
+  input.sw::after { content:""; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff;
+    box-shadow:0 2px 6px rgba(0,0,0,.35); transition:transform .25s cubic-bezier(.3,1.5,.6,1); }
+  input.sw:checked { background:var(--grad); box-shadow:0 0 14px var(--glow), inset 0 1px 0 rgba(255,255,255,.3); }
+  input.sw:checked::after { transform:translateX(20px); }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation:none !important; transition:none !important; }
+  }
+  input[type=number], select, input[type=password], input[type=text] { font:inherit; padding:5px 10px; border:1px solid var(--border); border-radius:10px;
+    background:var(--field); color:var(--text); transition:border-color .2s, box-shadow .2s; }
+  input[type=number]:focus, select:focus, input[type=password]:focus, input[type=text]:focus { border-color:var(--accent);
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent), 0 0 16px -4px var(--glow); outline:0; }
+  input[type=number] { width:76px; text-align:center; font-family:var(--num); font-size:13px; }
+  #presetList { max-height:340px; overflow-y:auto; }
+  input.presetname { font:inherit; font-weight:600; padding:5px 10px; border:1px solid var(--accent); border-radius:10px; background:var(--field); color:var(--text); min-width:0; flex:1; max-width:260px; }
+  input:disabled, select:disabled { opacity:.45; }
+  select { max-width:100%; cursor:pointer; }
+
+  /* ============ screen + log ============ */
+  .shotbox { position:relative; background:var(--screen); border-radius:16px; aspect-ratio:16/9; overflow:hidden;
+    border:1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    box-shadow:0 0 0 1px rgba(0,0,0,.4), 0 0 30px -8px var(--glow), 0 18px 40px -20px rgba(0,0,0,.8); }
+  .shotbox::after { content:""; position:absolute; inset:0; pointer-events:none; border-radius:inherit;
+    background:linear-gradient(180deg, rgba(255,255,255,.06), transparent 25%),
+      repeating-linear-gradient(0deg, rgba(0,0,0,.08) 0 1px, transparent 1px 3px); mix-blend-mode:overlay; }
+  .shot-img { display:block; width:100%; height:100%; object-fit:contain; }
+  .live-canvas { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
+  .shot-msg { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:16px; text-align:center; color:#c9c0e6; font-size:13px; }
+
+  /* ============ status dashboard ============ */
+  .dash { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; align-items:start; }
+  @media (max-width:860px) { .dash { grid-template-columns:minmax(0,1fr); } }
+  .tiles { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .tile { position:relative; background:var(--card2); border:1px solid var(--line); border-radius:16px; padding:11px 14px; min-width:0; overflow:hidden;
+    transition:border-color .2s, transform .2s; }
+  .tile:hover { border-color:color-mix(in srgb, var(--accent) 40%, transparent); transform:translateY(-1px); }
+  .tile::before { content:""; position:absolute; left:0; top:12px; bottom:12px; width:3px; border-radius:0 3px 3px 0; background:var(--grad); opacity:.8; }
+  .tile span { display:block; color:var(--muted); font-size:12.5px; }
+  .tile b { display:block; font-family:var(--num); font-size:19px; font-weight:800; letter-spacing:.5px; font-variant-numeric:tabular-nums; }
+  .tile.wide { grid-column:1 / -1; }
+  .devbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  .devchip { font:inherit; display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:999px; cursor:pointer;
+    border:1px solid var(--border); background:var(--card); color:var(--text); backdrop-filter:blur(8px); transition:all .2s; }
+  .devchip:hover { border-color:var(--accent); }
+  .devchip.active { border-color:var(--accent); background:var(--nav-active); font-weight:600; box-shadow:0 0 16px -4px var(--glow); }
+  .devchip .dot { width:9px; height:9px; }
+  .devrow { justify-content:space-between; flex-wrap:wrap; }
+  .devrow .opt { align-items:center; }
+  .sidecol { display:flex; flex-direction:column; gap:10px; min-width:0; }
+  .tile.total { padding:14px 16px; text-align:center;
+    background:radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 60%),
+      radial-gradient(100% 120% at 0% 100%, color-mix(in srgb, var(--accent2) 14%, transparent), transparent 60%), var(--card2); }
+  .tile.total::before { display:none; }
+  .tile.total > span:first-child { text-align:left; }
+  .tile.total b { font-size:30px; text-align:center; letter-spacing:1px;
+    background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; filter:drop-shadow(0 0 12px var(--glow)); }
+  .tile.total .muted { text-align:center; font-size:12px; }
+  .tile.boxes { text-align:center; }
+  .tile.boxes > span:first-child { text-align:left; }
+  .tile.boxes > b { font-size:26px; }
+  .boxrow { display:flex; justify-content:center; gap:8px 12px; flex-wrap:wrap; margin-top:8px; }
+  .tile .boxrow span { display:inline-flex; align-items:center; gap:6px; color:var(--text); padding:4px 12px 4px 6px; border-radius:999px;
+    background:var(--card); border:1px solid var(--line); transition:border-color .2s, box-shadow .2s; }
+  .tile .boxrow span:hover { border-color:var(--accent); box-shadow:0 0 12px -4px var(--glow); }
+  .boxrow img { width:26px; height:26px; object-fit:contain; filter:drop-shadow(0 0 6px var(--glow)); }
+  .boxrow b { font-size:15px; }
+  .tile .boxnote { font-size:11.5px; margin-top:6px; }
+  .pair { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+  .pair + .pair { margin-top:3px; }
+  .pair b { font-size:16px; }
+  .link { font:inherit; font-size:13px; padding:0; border:0; background:none; color:var(--accent-ink); text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+  .link:hover { color:var(--accent2); }
+
+  dialog { border:1px solid var(--border); border-radius:22px; padding:18px 20px; width:min(640px,94vw); max-height:86vh; color:var(--text);
+    background:color-mix(in srgb, var(--bg2) 92%, transparent); backdrop-filter:blur(20px); font:inherit;
+    box-shadow:0 0 0 1px rgba(0,0,0,.2), 0 0 50px -10px var(--glow), 0 40px 80px -20px rgba(0,0,0,.7); }
+  dialog[open] { animation:pop .25s cubic-bezier(.2,.9,.3,1.2); }
+  @keyframes pop { from { opacity:0; transform:translateY(12px) scale(.96); } to { opacity:1; transform:none; } }
+  dialog::backdrop { background:rgba(6,3,16,.6); backdrop-filter:blur(6px); }
+  .list { display:flex; flex-direction:column; gap:8px; }
+  .item { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:14px; background:var(--card2); border:1px solid var(--line); }
+  .item img { width:150px; aspect-ratio:16/9; object-fit:cover; border-radius:10px; background:var(--screen); cursor:zoom-in; flex:none; }
+  .item b { font-weight:600; }
+  #zoom { width:min(1100px,96vw); padding:8px; }
+  #zoom img { display:block; width:100%; border-radius:14px; }
+  #log { margin:0; padding:14px 16px; background:var(--log); color:var(--logtext); border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+    border-radius:16px; height:calc(100vh - 240px); min-height:240px; overflow:auto;
+    box-shadow:inset 0 0 40px rgba(0,0,0,.6), 0 0 24px -12px var(--glow);
+    font:12.5px/1.65 "Cascadia Mono",Consolas,monospace; white-space:pre-wrap; word-break:break-word; }
+  #log .err { color:#ff7a8a; text-shadow:0 0 8px rgba(255,80,100,.4); }
+  #log .dim { color:#8a82a6; }
+  code { background:color-mix(in srgb, var(--accent) 12%, transparent); border:1px solid var(--line); padding:1px 7px; border-radius:7px;
+    font:12.5px "Cascadia Mono",Consolas,monospace; color:var(--accent-ink); }
+
+  /* ============ treasure tools ============ */
+  .tools { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
+  .tool { position:relative; font:inherit; display:flex; align-items:center; gap:16px; padding:18px 18px; border-radius:20px; text-align:left; cursor:pointer; overflow:hidden;
+    border:1px solid var(--border); background:var(--card2); backdrop-filter:blur(10px); color:var(--text);
+    transition:transform .2s cubic-bezier(.2,.8,.2,1), border-color .2s, box-shadow .25s; }
+  .tool::before { content:""; position:absolute; inset:0; opacity:0; transition:opacity .25s;
+    background:radial-gradient(260px 140px at 0% 50%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 70%),
+      radial-gradient(200px 120px at 100% 100%, color-mix(in srgb, var(--accent2) 18%, transparent), transparent 70%); }
+  .tool:hover:not(:disabled) { transform:translateY(-3px); border-color:var(--accent); box-shadow:0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent), 0 18px 34px -16px var(--glow); }
+  .tool:hover:not(:disabled)::before { opacity:1; }
+  .tool:disabled { opacity:.45; cursor:default; }
+  .tool > * { position:relative; }
+  .tool img { width:74px; height:64px; object-fit:contain; flex:none; filter:drop-shadow(0 0 10px var(--glow)); transition:transform .25s cubic-bezier(.3,1.6,.6,1); }
+  .tool:hover:not(:disabled) img { transform:scale(1.12) rotate(-6deg); }
+  .tool b { display:block; font-size:16px; font-weight:600; margin-bottom:3px; }
+  .tool span span { color:var(--muted); font-size:13px; line-height:1.45; }
+  #toolDlg { padding:0; width:min(520px,94vw); overflow:hidden; display:none; flex-direction:column; }
+  #toolDlg[open] { display:flex; }
+  .tdhead { display:flex; align-items:flex-start; gap:14px; padding:18px 20px 16px; border-bottom:1px solid var(--border);
+    background:radial-gradient(140% 160% at 0% 0%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 60%),
+      radial-gradient(100% 120% at 100% 0%, color-mix(in srgb, var(--accent2) 16%, transparent), transparent 60%); }
+  .tdhead img { width:auto; max-width:84px; height:46px; object-fit:contain; flex:none; filter:drop-shadow(0 0 10px var(--glow)); }
+  .tdhead b { display:block; font-size:18px; font-weight:700; }
+  .tdhead p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+  .tdhead .x { margin-left:auto; width:34px; height:34px; flex:none; border:1px solid var(--border); border-radius:11px; background:var(--card); color:var(--muted);
+    font-size:20px; line-height:1; cursor:pointer; padding:0; transition:all .2s; }
+  .tdhead .x:hover { color:var(--text); border-color:var(--accent2); box-shadow:0 0 12px -2px var(--glow2); transform:rotate(90deg); }
+  .tdbody { padding:16px 20px; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:14px; }
+  .tdbody label.f { display:flex; flex-direction:column; gap:5px; font-weight:600; font-size:13px; }
+  .tdbody label.f input { width:150px; text-align:left; }
+  .tdbody hr { border:0; border-top:1px solid var(--line); margin:2px 0; width:100%; }
+  .tdsec { font-weight:600; font-size:13px; letter-spacing:.3px; }
+  .keeps { display:flex; flex-wrap:wrap; gap:8px; }
+  .keep { font:inherit; width:86px; display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 4px 8px; border-radius:16px; cursor:pointer;
+    border:1px solid var(--line); background:var(--card2); color:var(--text); text-align:center; position:relative; transition:all .2s; }
+  .keep:hover:not(:disabled) { transform:translateY(-2px); border-color:var(--accent); }
+  .keep img { width:44px; height:44px; object-fit:contain; border-radius:10px; filter:drop-shadow(0 0 6px var(--glow)); }
+  .keep b { font-size:12.5px; font-weight:600; }
+  .keep small { color:var(--muted); font-size:11px; line-height:1.25; }
+  .keep.on { border-color:var(--accent); background:color-mix(in srgb, var(--accent) 14%, var(--card2)); box-shadow:0 0 18px -6px var(--glow); }
+  .keep.on::after { content:"✓"; position:absolute; top:-7px; right:-7px; width:22px; height:22px; border-radius:50%; background:var(--grad); color:#fff;
+    font-size:12px; line-height:22px; font-weight:700; box-shadow:0 0 10px var(--glow); }
+  .keep:disabled { opacity:.4; cursor:default; }
+  .radios { display:flex; flex-wrap:wrap; gap:6px 18px; }
+  .radios label, .checkline { display:inline-flex; align-items:center; gap:8px; cursor:pointer; }
+  .radios input, .checkline input { width:17px; height:17px; accent-color:var(--accent); margin:0; }
+  .qchips { display:flex; gap:6px; }
+  .qchips button { font:inherit; font-family:var(--num); font-size:12px; padding:4px 12px; border-radius:999px; border:1px solid var(--border); background:var(--card2); color:var(--text); cursor:pointer; transition:all .2s; }
+  .qchips button:hover { border-color:var(--accent); }
+  .qchips button.on { background:var(--grad); border-color:transparent; color:#fff; font-weight:800; box-shadow:0 0 12px var(--glow); }
+  .warnbox { border:1px solid color-mix(in srgb, #ffbf2f 55%, transparent); border-radius:16px; padding:13px 15px;
+    background:linear-gradient(135deg, color-mix(in srgb, #ffc23d 18%, transparent), color-mix(in srgb, #ff7a00 6%, transparent)); }
+  .warnbox b { display:block; margin-bottom:7px; font-size:13px; }
+  .warnbox ul { margin:0 0 9px; padding:0; list-style:none; display:flex; flex-direction:column; gap:6px; font-size:12.5px; }
+  .warnbox li { display:flex; gap:8px; }
+  .warnbox li::before { content:"★"; color:#ffb400; flex:none; text-shadow:0 0 8px rgba(255,180,0,.6); }
+  .warnbox .checkline { border-top:1px solid color-mix(in srgb, #ffbf2f 40%, transparent); padding-top:9px; width:100%; font-weight:600; font-size:13px; }
+  .tdfoot { display:flex; align-items:center; gap:10px; padding:13px 20px; border-top:1px solid var(--border); background:color-mix(in srgb, var(--card2) 80%, transparent); }
+  .tdfoot .muted { margin-right:auto; }
+  .btn-go { font-weight:700; padding:10px 22px; border-radius:999px; border:0; background:var(--grad); color:#fff; box-shadow:0 0 22px -4px var(--glow); }
+  .btn-go:hover:not(:disabled) { background:var(--grad); filter:brightness(1.08); }
+  .btn-plain { border:0; background:none; font-weight:600; }
+  .baimgs { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .baimgs figure { margin:0; }
+  .baimgs img { width:100%; border-radius:12px; background:var(--screen); aspect-ratio:16/9; object-fit:cover; cursor:zoom-in; }
+  .baimgs figcaption { font-size:12.5px; color:var(--muted); text-align:center; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <mask id="bite"><rect width="64" height="64" fill="#fff"/><circle cx="53" cy="11" r="11"/><circle cx="61" cy="27" r="6"/></mask>
+  </defs>
+  <symbol id="cookie" viewBox="0 0 64 64">
+    <g mask="url(#bite)">
+      <circle cx="32" cy="32" r="28" fill="#dc9d50" stroke="#b06f28" stroke-width="3"/>
+      <g fill="#5b3216"><circle cx="20" cy="22" r="4.5"/><circle cx="35" cy="27" r="4"/><circle cx="23" cy="40" r="5"/><circle cx="42" cy="43" r="4.5"/><circle cx="32" cy="52" r="3"/><circle cx="12" cy="32" r="3"/></g>
+    </g>
+  </symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2.5"/></symbol>
+  <symbol id="i-status" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/></symbol>
+  <symbol id="i-screen" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M18 10v4"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h3M11 12h9M4 18h9M17 18h3"/><circle cx="16" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="15" cy="18" r="2"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></symbol>
+  <symbol id="i-log" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></symbol>
+  <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3M7.5 15h9"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12h11l2-8H6.3"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v9M6.3 6.8a8 8 0 1 0 11.4 0"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></symbol>
+  <symbol id="i-tools" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0 5 5L21 13l-8 8-2-2 6.3-6.3a4 4 0 0 1-5-5L9 5 7 3l4-1z"/><path d="m3 21 6-6"/></symbol>
+</svg>
+
+<div class="shell">
+  <aside class="side">
+    <div class="logo">
+      <img src="logo.png" alt="">
+      <b>CookieRunBot</b>
+    </div>
+    <nav id="nav" aria-label="เมนู">
+      <button class="nav active" data-page="status"><svg class="ico"><use href="#i-status"/></svg>สถานะ</button>
+      <button class="nav" data-page="emulator"><svg class="ico"><use href="#i-screen"/></svg>อีมูเลเตอร์</button>
+      <button class="nav" data-page="settings"><svg class="ico"><use href="#i-sliders"/></svg>ตั้งค่าบอท</button>
+      <button class="nav" data-page="tools"><svg class="ico"><use href="#i-tools"/></svg>เครื่องมือ</button>
+      <button class="nav" data-page="remote" id="remoteNav"><svg class="ico"><use href="#i-phone"/></svg>รีโมท</button>
+      <button class="nav" data-page="log"><svg class="ico"><use href="#i-log"/></svg>Log</button>
+      <button class="nav" data-page="about"><svg class="ico"><use href="#i-info"/></svg>เกี่ยวกับ</button>
+    </nav>
+    <div class="side-foot" id="version"></div>
+  </aside>
+
+  <div class="main">
+    <div class="content">
+      <!-- shown when the page is opened as a file, without the app running -->
+      <section class="page" id="offline" hidden>
+        <div class="card">
+          <div class="head"><div><h2>ยังไม่ได้เปิดตัวบอท</h2><p>หน้านี้เป็นแค่หน้าจอควบคุม</p></div><span class="dot bad"></span></div>
+        </div>
+        <div class="card">
+          <ol class="steps">
+            <li>ถ้ามีไฟล์ <code>CookieRunBot.exe</code> ให้ดับเบิลคลิกไฟล์นั้น</li>
+            <li>หรือลง Python แล้วดับเบิลคลิก <code>start_web.bat</code> ในโฟลเดอร์นี้</li>
+          </ol>
+          <p class="muted">หน้านี้จะเชื่อมต่อให้เองภายในไม่กี่วินาที ...</p>
+        </div>
+      </section>
+
+      <div class="devbar page" id="devbar" hidden></div>
+
+      <section class="page" data-page="status">
+        <div class="card">
+          <div class="head">
+            <div><h2>บอท</h2><p id="statusText">กำลังโหลด...</p><p id="allTotals" hidden></p></div>
+            <span class="dot" id="statusDot"></span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="dash">
+            <div class="tiles">
+              <div class="tile"><span>วิ่งไปแล้ว</span><b id="rounds">0 รอบ</b></div>
+              <div class="tile"><span>เวลาที่ทำงาน</span><b id="elapsed">00:00:00</b></div>
+              <div class="tile"><span>เฉลี่ยต่อรอบ</span><b id="average">-</b></div>
+              <div class="tile"><span>รอบล่าสุดใช้เวลา</span><b id="lastRound">-</b></div>
+              <div class="tile wide boxes">
+                <span>กล่องรวมทุกรอบ</span>
+                <b id="boxes">0</b>
+                <div class="boxrow">
+                  <span><img src="box1.png" alt="กล่องทองแดง"><b id="box1">-</b></span>
+                  <span><img src="box2.png" alt="กล่องเงิน"><b id="box2">-</b></span>
+                  <span><img src="box3.png" alt="กล่องทอง"><b id="box3">-</b></span>
+                  <span><img src="logo.png" alt="กล่องสายรุ้ง"><b id="box4">-</b></span>
+                </div>
+                <span class="boxnote" id="boxnote" hidden></span>
+              </div>
+              <div class="tile wide">
+                <div class="pair"><span>เจอหน้า Card Game</span><b id="cardsSeen">0</b></div>
+                <div class="pair"><span>แก้สำเร็จ</span><b id="cardsSolved">0</b></div>
+              </div>
+            </div>
+            <div class="sidecol">
+              <div class="shotbox">
+                <img class="shot-img" alt="ภาพหน้าจออีมูเลเตอร์" hidden>
+                <div class="shot-msg">กำลังตรวจการเชื่อมต่อ...</div>
+              </div>
+              <div class="tile total"><span>เงินสะสมทั้งหมด</span><b id="coins">0</b><span class="muted" id="coinsSession"></span></div>
+              <div class="tile total"><span>XP สะสมทั้งหมด</span><b id="xp">0</b><span class="muted" id="xpSession"></span></div>
+              <div class="tile"><div class="pair"><span>เงินเฉลี่ยต่อรอบ</span><b id="coinsAvg">-</b></div>
+                <div class="pair"><span>XP เฉลี่ยต่อรอบ</span><b id="xpAvg">-</b></div></div>
+            </div>
+          </div>
+          <dl style="margin-top:12px">
+            <dt>กำลังทำ</dt><dd id="nowText">-</dd>
+            <dt>อีมูเลเตอร์</dt><dd><span class="screen-info">ยังไม่ได้ตรวจ</span></dd>
+          </dl>
+          <div class="row" style="margin-top:10px">
+            <button class="link" id="roundsBtn">ดูรายละเอียดรายรอบ (0)</button>
+            <button class="link" id="historyBtn">ประวัติการวิ่ง</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="title"><span>ตั้งค่าที่เปิดอยู่</span><button class="btn btn-sm" data-goto="settings"><svg class="ico"><use href="#i-sliders"/></svg>แก้ไข</button></div>
+          <div class="chips" id="chips"></div>
+        </div>
+        <div class="card">
+          <ol class="steps">
+            <li>เปิดเกมค้างไว้ที่หน้าเมนูหลัก จออีมูเลเตอร์ต้องเป็น 1280x720</li>
+            <li>เลือกสิ่งที่ต้องการในหน้า "ตั้งค่าบอท"</li>
+            <li>กด "เริ่มบอท" ด้านล่าง ถ้าปิดหน้าต่างนี้ บอทจะหยุดด้วย</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="page" data-page="emulator" hidden>
+        <div class="card">
+          <div class="title">
+            <span><svg class="ico"><use href="#i-screen"/></svg>อีมูเลเตอร์ที่จะให้บอทเล่น</span>
+            <button class="btn btn-sm" id="findDevices"><svg class="ico"><use href="#i-reset"/></svg>ค้นหาอีกครั้ง</button>
+          </div>
+          <div class="list" id="devList"></div>
+          <p class="muted" id="devHint" style="margin:8px 0 0">กำลังค้นหา...</p>
+        </div>
+        <div class="card">
+          <div class="title">
+            <span><svg class="ico"><use href="#i-screen"/></svg>หน้าจออีมูเลเตอร์</span>
+            <span class="muted screen-info"></span>
+          </div>
+          <div class="shotbox">
+            <img class="shot-img" alt="ภาพหน้าจออีมูเลเตอร์" hidden>
+            <div class="shot-msg">กำลังตรวจการเชื่อมต่อ...</div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn btn-sm" id="shot"><svg class="ico"><use href="#i-camera"/></svg>จับภาพ</button>
+            <label class="opt" style="align-items:center"><input type="checkbox" class="sw" id="live"><span>ดูสด</span></label>
+            <select id="liveQuality" aria-label="คุณภาพภาพสด">
+              <option value="smooth">ลื่นสุด (~50 ภาพ/วิ)</option>
+              <option value="balanced">กลางๆ (~30 ภาพ/วิ)</option>
+              <option value="sharp">คมชัดสุด (~20 ภาพ/วิ)</option>
+            </select>
+          </div>
+        </div>
+        <div class="card">
+          <p class="muted" style="margin:0">บอทหาอีมูเลเตอร์ที่เปิดอยู่ให้เอง (MuMu, LDPlayer, BlueStacks, Nox, MEmu) ถ้าขึ้นว่าเชื่อมต่อไม่ได้ ให้เปิด ADB debugging ในตั้งค่าอีมูเลเตอร์แล้วกด "จับภาพ" อีกครั้ง</p>
+        </div>
+      </section>
+
+      <section class="page" data-page="settings" hidden>
+        <div class="card">
+          <div class="title" style="margin-bottom:6px">
+            <span><svg class="ico"><use href="#i-star"/></svg>เซ็ทการตั้งค่า</span>
+            <span class="muted" id="optsHint">ค่าที่เลือกจะถูกจำไว้ให้</span>
+          </div>
+          <div class="list" id="presetList"></div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn btn-sm" id="savePreset"><svg class="ico"><use href="#i-star"/></svg>เซฟเซ็ท</button>
+            <button class="btn btn-sm" id="defaults"><svg class="ico"><use href="#i-reset"/></svg>คืนค่าเริ่มต้น</button>
+          </div>
+          <p class="muted" style="margin:8px 0 0">เซฟเซ็ท = เก็บการตั้งค่าทั้งหมดในหน้านี้ตอนนี้เป็นเซ็ทใหม่ ตั้งชื่อได้ว่าใช้ฟาร์มอะไร กด "ใช้" เพื่อโหลดกลับมา</p>
+        </div>
+
+        <fieldset id="opts">
+          <div class="card">
+            <div class="title"><span><svg class="ico"><use href="#i-flask"/></svg>โหมดทดลอง</span></div>
+            <div class="optrow">
+              <label class="opt"><input type="checkbox" class="sw" data-key="dry_run">
+                <span><span class="name">ไม่กดจริง เขียน log อย่างเดียว</span><span class="hint">ใช้ลองดูว่าบอทอ่านหน้าจอถูกไหม โดยไม่แตะเกม</span></span></label>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="title"><span><svg class="ico"><use href="#i-cart"/></svg>ซื้อของก่อนเริ่มแต่ละรอบ</span></div>
+            <div class="grid2">
+              <div class="optrow"><label class="opt"><input type="checkbox" class="sw" data-key="buy_hp_extension"><span class="name">HP Extension</span></label></div>
+              <div class="optrow"><label class="opt"><input type="checkbox" class="sw" data-key="buy_power_jelly"><span class="name">Power Jelly Boost</span></label></div>
+              <div class="optrow"><label class="opt"><input type="checkbox" class="sw" data-key="buy_double_xp"><span class="name">Double XP</span></label></div>
+              <div class="optrow"><label class="opt"><input type="checkbox" class="sw" data-key="buy_fast_start"><span class="name">ซื้อ Fast Start</span></label></div>
+              <div class="optrow"><label class="opt"><input type="checkbox" class="sw" data-key="buy_cookie_relay"><span class="name">ซื้อ Cookie Relay</span></label></div>
+            </div>
+            <div class="muted" style="margin:2px 0 6px">HP Extension, Power Jelly Boost, Double XP: ถ้าปิดไว้ บอทจะกดยกเลิกในเกมให้ด้วย</div>
+            <div class="optrow" style="border-top:1px dashed var(--border)">
+              <label class="opt"><input type="checkbox" class="sw" data-key="use_desired_random_boost">
+                <span><span class="name">สุ่ม Random Boost จนได้</span><span class="hint">รอผลสุ่มไม่เกิน 30 วินาที ถ้าไม่ได้จะข้าม</span></span></label>
+              <span class="extra"><select data-key="boost_index" data-needs="use_desired_random_boost" aria-label="Random Boost ที่ต้องการ"></select></span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="title"><span><svg class="ico"><use href="#i-bolt"/></svg>ระหว่างวิ่ง</span></div>
+            <div class="optrow">
+              <label class="opt"><input type="checkbox" class="sw" data-key="auto_jump">
+                <span><span class="name">กด Jump + Double Jump อัตโนมัติ</span><span class="hint">กดซ้ำๆ ตลอดรอบ ไม่ได้ดูสิ่งกีดขวาง</span></span></label>
+            </div>
+            <div class="optrow">
+              <label class="opt"><input type="checkbox" class="sw" data-key="stop_jump_when_done" data-needs="auto_jump"><span class="name">หยุดกระโดดเมื่อครบ</span></label>
+              <span class="extra"><input type="number" data-key="jump_limit" data-needs="stop_jump_when_done" min="1" aria-label="จำนวนครั้ง">ครั้ง</span>
+            </div>
+            <div class="optrow"><label class="opt"><input type="checkbox" class="sw" data-key="use_fast_start"><span class="name">กดใช้ Fast Start</span></label></div>
+            <div class="optrow"><label class="opt"><input type="checkbox" class="sw" data-key="use_cookie_relay"><span class="name">กดใช้ Cookie Relay</span></label></div>
+            <div class="optrow">
+              <label class="opt"><input type="checkbox" class="sw" data-key="exit_after_relay" data-needs="use_cookie_relay">
+                <span><span class="name">ออกจากรอบทันทีหลังใช้ Cookie Relay</span><span class="hint">กด Pause แล้ว Quit</span></span></label>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="title"><span><svg class="ico"><use href="#i-heart"/></svg>หัวใจและของรางวัล</span></div>
+            <div class="optrow">
+              <label class="opt"><input type="checkbox" class="sw" data-key="mail_hearts"><span class="name">รับหัวใจในจดหมายอัตโนมัติ</span></label>
+              <span class="extra">ทุกๆ<input type="number" data-key="mail_minutes" data-needs="mail_hearts" min="0" aria-label="นาที">นาที</span>
+            </div>
+            <div class="optrow"><label class="opt"><input type="checkbox" class="sw" data-key="detect_relic"><span class="name">รับ Relic อัตโนมัติ</span></label></div>
+          </div>
+
+          <div class="card">
+            <div class="title"><span><svg class="ico"><use href="#i-stop"/></svg>หยุดอัตโนมัติ</span><span class="muted">บอทหยุดที่หน้าล็อบบี้เมื่อถึงข้อใดข้อหนึ่ง</span></div>
+            <div class="optrow">
+              <label class="opt"><input type="checkbox" class="sw" data-key="stop_rounds"><span class="name">เมื่อวิ่งครบ</span></label>
+              <span class="extra"><input type="number" data-key="stop_rounds_n" data-needs="stop_rounds" min="1" aria-label="จำนวนรอบ">รอบ</span>
+            </div>
+            <div class="optrow">
+              <label class="opt"><input type="checkbox" class="sw" data-key="stop_minutes"><span class="name">เมื่อทำงานครบ</span></label>
+              <span class="extra"><input type="number" data-key="stop_minutes_n" data-needs="stop_minutes" min="1" aria-label="นาที">นาที</span>
+            </div>
+            <div class="optrow">
+              <label class="opt"><input type="checkbox" class="sw" data-key="stop_hearts">
+                <span><span class="name">เมื่อหัวใจสำรองเหลือน้อยกว่า</span><span class="hint">ตัวเลข "+ N" ข้างหัวใจ 5 ดวงด้านบน</span></span></label>
+              <span class="extra"><input type="number" data-key="stop_hearts_n" data-needs="stop_hearts" min="0" aria-label="หัวใจ">ดวง</span>
+            </div>
+            <div class="optrow">
+              <label class="opt"><input type="checkbox" class="sw" data-key="stop_coins">
+                <span><span class="name">เมื่อได้เงินถึง</span><span class="hint">นับจากหน้า Result ตั้งแต่กดเริ่มบอท</span></span></label>
+              <span class="extra"><input type="number" data-key="stop_coins_n" data-needs="stop_coins" min="1" style="width:110px" aria-label="เงิน">เหรียญ</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="title"><span><svg class="ico"><use href="#i-shield"/></svg>ความต่อเนื่อง</span></div>
+            <div class="optrow">
+              <span class="name">รอก่อนกดเริ่มรอบถัดไป (สุ่ม)</span>
+              <span class="extra" style="margin-left:0"><input type="number" data-key="next_game_delay_min" min="0" aria-label="วินาทีต่ำสุด">ถึง<input type="number" data-key="next_game_delay_max" min="0" aria-label="วินาทีสูงสุด">วินาที</span>
+            </div>
+            <div class="optrow">
+              <span class="name">รอที่หน้า Result ก่อนกด OK</span>
+              <span class="extra" style="margin-left:0"><input type="number" data-key="result_delay" min="0" aria-label="วินาที">วินาที</span>
+            </div>
+            <div class="optrow">
+              <label class="opt"><input type="checkbox" class="sw" data-key="close_popups">
+                <span><span class="name">ปิดหน้าต่างเด้งอัตโนมัติ</span><span class="hint">Mystery Box, Level Up, Daily, League ฯลฯ</span></span></label>
+            </div>
+            <div class="optrow">
+              <label class="opt"><input type="checkbox" class="sw" data-key="restart_on_lost">
+                <span><span class="name">รีสตาร์ทแอปเมื่อเจอ Connection lost</span><span class="hint">ถ้าปิดไว้ บอทจะกด Confirm แทน</span></span></label>
+            </div>
+          </div>
+        </fieldset>
+      </section>
+
+      <section class="page" data-page="tools" hidden>
+        <div class="card">
+          <div class="title"><span><svg class="ico"><use href="#i-tools"/></svg>เครื่องมือสมบัติ</span><span class="muted" id="toolsHint">เปิดเกมค้างไว้ที่หน้าล็อบบี้ แล้วเลือกเครื่องมือ</span></div>
+          <div class="tools">
+            <button class="tool" data-tool="upgrade"><img src="tool-img/upgrade.png" alt=""><span><b>อัพเกรดสมบัติทุกชิ้นให้ +9</b><span>ไล่ตีบวกสมบัติในคลังทีละชิ้นจนครบ +9 ทุกชิ้นที่ยังตีได้</span></span></button>
+            <button class="tool" data-tool="powder"><img src="tool-img/powder.png" alt=""><span><b>ปั๊มผง (สุ่มสมบัติแล้วย่อย)</b><span>สุ่มกล่อง 5,000 เหรียญแล้วย่อยสมบัติเป็น Magic Powder จนครบเป้า</span></span></button>
+            <button class="tool" data-tool="tickets"><img src="tool-img/ticket.png" alt=""><span><b>เปิดตั๋วเหลือง (Free Treasure Ticket)</b><span>เปิดตั๋วสมบัติฟรี (สีเหลือง) จนคลังเต็ม แล้วย่อยผงให้เหมือน flow ปั๊มผง จากนั้นเปิดต่อจนตั๋วหมด</span></span></button>
+            <button class="tool" data-tool="hearts"><img src="tool-img/hearts.png" alt=""><span><b>ส่งหัวใจให้เพื่อน</b><span>เลื่อนรายชื่อเพื่อนขึ้นไปบนสุดก่อน แล้วไล่กดส่งหัวใจลงมาทีละคนจนสุดรายชื่อ</span></span></button>
+            <button class="tool" data-tool="shard"><img src="tool-img/shard.png" alt=""><span><b>ปั๊ม Mystic Shard</b><span>ตี +9 อีโว แล้วย่อย Famous Choco Chip เป็น Mystic Shard จนครบเป้า</span></span></button>
+          </div>
+        </div>
+        <div class="card">
+          <dl>
+            <dt>Magic Powder ล่าสุด</dt><dd id="lastPowder">- (อ่านตอนเครื่องมือเริ่มทำงาน)</dd>
+            <dt>Mystic Shard ล่าสุด</dt><dd id="lastShard">-</dd>
+          </dl>
+          <p class="muted" style="margin:10px 0 0">ระหว่างเครื่องมือทำงาน ปุ่มด้านล่างจะเปลี่ยนเป็น "หยุด" ใช้หยุดได้ทุกเมื่อ ถ้าบอทเจอหน้าจอที่ไม่รู้จัก จะหยุดเองและบันทึกภาพไว้ในโฟลเดอร์ <code>results</code></p>
+        </div>
+      </section>
+
+      <section class="page" data-page="remote" hidden>
+        <div class="card">
+          <div class="title"><span><svg class="ico"><use href="#i-phone"/></svg>ควบคุมจากมือถือ / เครื่องอื่น</span><span class="dot" id="remoteDot"></span></div>
+          <p class="muted" style="margin:0 0 10px">ให้คอมเครื่องนี้เปิดทิ้งไว้ทำฟาร์ม แล้วเปิดหน้าควบคุมจากมือถือหรือคอมเครื่องอื่นได้ ต้องใส่รหัสผ่านทุกครั้งที่เข้าจากเครื่องอื่น</p>
+          <div class="optrow">
+            <span class="name">รหัสผ่าน (อย่างน้อย 6 ตัว)</span>
+            <span class="row"><input type="password" id="remotePass" autocomplete="new-password" placeholder="ตั้งรหัสผ่านใหม่" style="font:inherit;padding:4px 10px;border:1.5px solid var(--border);border-radius:9px;background:var(--field);color:var(--text);width:180px">
+              <button class="btn btn-sm" id="remoteSavePass">บันทึกรหัส</button></span>
+          </div>
+          <div class="optrow">
+            <label class="opt"><input type="checkbox" class="sw" id="remoteOn">
+              <span><span class="name">เปิดให้เข้าจากเครื่องอื่น</span><span class="hint" id="remoteHint">ต้องตั้งรหัสผ่านก่อน</span></span></label>
+          </div>
+          <div id="remoteLinks" hidden>
+            <div class="tdsec" style="margin:8px 0 4px">เปิดที่มือถือ/เครื่องอื่น (ต่อ Wi-Fi เดียวกัน หรือผ่าน Tailscale)</div>
+            <div class="list" id="remoteList"></div>
+          </div>
+          <p class="muted" id="remoteMsg" style="margin:8px 0 0"></p>
+        </div>
+        <div class="card">
+          <div class="title"><span><svg class="ico"><use href="#i-info"/></svg>วิธีตั้งค่า</span></div>
+          <ol class="steps">
+            <li>ตั้งรหัสผ่านแล้วเปิดสวิตช์ด้านบน ถ้า Windows ถามเรื่อง Firewall ให้กด <b>อนุญาต (Allow)</b> สำหรับเครือข่ายส่วนตัว</li>
+            <li><b>อยู่บ้าน (Wi-Fi เดียวกัน):</b> เปิดลิงก์ที่ขึ้นด้านบนในเบราว์เซอร์มือถือ แล้วใส่รหัสผ่าน</li>
+            <li><b>อยู่นอกบ้าน:</b> ลงแอป <b>Tailscale</b> (ฟรี) ทั้งในคอมเครื่องนี้และมือถือ ล็อกอินบัญชีเดียวกัน แล้วเปิดลิงก์ที่ขึ้นต้นด้วย <code>100.</code></li>
+            <li>ตอนเปิดใช้งานอยู่ ปิดหน้าต่างนี้แล้วบอทยังทำงานต่อ จะเปิดหน้าต่างกลับมา ให้ดับเบิลคลิก CookieRunBot อีกครั้ง จะปิดโปรแกรมจริง ให้กด "ปิดโปรแกรม" ในหน้าเกี่ยวกับ</li>
+            <li>ตั้งคอมไม่ให้ Sleep เอง (Settings → System → Power) และเปิดอีมูเลเตอร์ + เกมค้างไว้</li>
+          </ol>
+        </div>
+      </section>
+      <section class="page" data-page="log" hidden>
+        <div class="card">
+          <div class="title">
+            <span><svg class="ico"><use href="#i-log"/></svg>Log การทำงาน</span>
+            <button class="btn btn-sm" id="clear"><svg class="ico"><use href="#i-trash"/></svg>ล้าง</button>
+          </div>
+          <div id="log" role="log"></div>
+        </div>
+      </section>
+
+      <section class="page" data-page="about" hidden>
+        <div class="card">
+          <div class="head"><div><h2>CookieRunBot</h2><p id="aboutVersion">บอทเล่น CookieRun Classic อัตโนมัติผ่านอีมูเลเตอร์</p></div></div>
+        </div>
+        <div class="card">
+          <dl>
+            <dt>ทำงานยังไง</dt><dd>จับภาพจออีมูเลเตอร์ผ่าน ADB แล้วเทียบกับรูปตัวอย่างในโฟลเดอร์ <code>templates</code> เพื่อรู้ว่าอยู่หน้าไหน จากนั้นกดปุ่มตามที่ตั้งค่าไว้</dd>
+            <dt>ต้องมี</dt><dd>อีมูเลเตอร์ Android ที่เปิด ADB debugging และตั้งจอ 1280x720</dd>
+            <dt>ตั้งค่า</dt><dd>เก็บไว้ในไฟล์ <code>web-config.json</code> ข้างตัวโปรแกรม</dd>
+          </dl>
+        </div>
+        <div class="card">
+          <div class="row" style="justify-content:space-between">
+            <span class="muted">ปิดหน้าต่างนี้หรือกดปุ่มนี้ บอทจะหยุดและโปรแกรมจะปิด</span>
+            <button class="btn btn-danger" id="quit"><svg class="ico"><use href="#i-power"/></svg>ปิดโปรแกรม</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="foot" id="foot">
+      <div>
+        <button class="btn btn-main" id="toggle"><svg class="ico fill"><use id="toggleIcon" href="#i-play"/></svg><span id="toggleText">เริ่มบอท</span></button>
+        <button class="btn btn-line" id="heartsNow" hidden><svg class="ico"><use href="#i-heart"/></svg>ส่งหัวใจรอบถัดไปเลย</button>
+      </div>
+      <button class="btn btn-line" data-goto="log"><svg class="ico"><use href="#i-log"/></svg>ดู Log</button>
+    </div>
+  </div>
+</div>
+
+<dialog id="roundsDlg">
+  <div class="title"><span>รายละเอียดรายรอบ (ล่าสุด 50 รอบ)</span><form method="dialog"><button class="btn btn-sm">ปิด</button></form></div>
+  <p class="muted" style="margin-top:0">รูปคือหน้าสรุปผลตอนจบรอบ กดที่รูปเพื่อขยายดูเงินและ XP ของรอบนั้น</p>
+  <div class="list" id="roundsList"></div>
+</dialog>
+<dialog id="historyDlg">
+  <div class="title"><span>ประวัติการวิ่ง</span><form method="dialog"><button class="btn btn-sm">ปิด</button></form></div>
+  <div class="list" id="historyList"></div>
+</dialog>
+<dialog id="zoom"><form method="dialog"><img alt="หน้าสรุปผลของรอบ"></form></dialog>
+
+<dialog id="toolDlg">
+  <div class="tdhead">
+    <img id="tdIcon" alt="">
+    <div><b id="tdTitle"></b><p id="tdSub"></p></div>
+    <button class="x" id="tdX" aria-label="ปิด">×</button>
+  </div>
+  <div class="tdbody">
+    <div class="muted" data-for="hearts">เปิดเกมค้างไว้ที่หน้าล็อบบี้ บอทจะไปที่แท็บ Friends เลื่อนรายชื่อขึ้นไปบนสุดก่อน (ถ้าไปไม่ถึงบนสุดจะไม่ส่ง) แล้วไล่ส่งหัวใจลงมาทีละคน</div>
+    <div class="row" data-for="hearts">
+      <label class="checkline"><input type="checkbox" id="heartRepeat">ส่งซ้ำทุกๆ</label>
+      <input type="number" id="heartHours" min="1" style="width:70px" aria-label="ชั่วโมง"><span class="muted">ชม. ระหว่างที่บอทฟาร์ม</span>
+    </div>
+    <div class="muted" data-for="upgrade">ไม่มีตัวเลือกเพิ่มเติม - บอทจะไล่ตีบวกสมบัติที่ยังตีได้ทุกชิ้นจนครบ +9 (ใช้ปุ่ม Regular ที่จ่ายเป็นเหรียญ ไม่ใช้เพชร)</div>
+
+    <div class="muted" data-for="shard" id="shardSummary"></div>
+
+    <label class="f" data-for="powder">จำนวน powder ที่ต้องการ<input type="number" id="powderTarget" min="1"></label>
+    <label class="f" data-for="powder">สุ่มกี่กล่องแล้วย่อย (0 = จนคลังเต็ม)<input type="number" id="drawsBefore" min="0">
+      <span class="muted" style="font-weight:400">0 = สุ่มจนคลังเต็ม (เกมขึ้น Not enough space!) แล้วค่อยย่อยทีเดียว</span></label>
+
+    <div data-for="shard">
+      <div class="tdsec">สมบัติที่ใช้ปั๊ม</div>
+      <div class="keeps" style="margin-top:6px">
+        <button class="keep on" type="button"><img src="tool-img/cookie.png" alt=""><b>คุกกี้</b><small>ตี +9 อีโว แล้วย่อย</small></button>
+        <button class="keep" type="button" disabled><img src="tool-img/hammer.png" alt=""><b>ค้อน</b><small>เร็วๆ นี้</small></button>
+        <button class="keep" type="button" disabled><img src="tool-img/horse.png" alt=""><b>ม้า</b><small>เร็วๆ นี้</small></button>
+      </div>
+    </div>
+    <div data-for="shard">
+      <div class="tdsec">ต้องการ shard เพิ่ม</div>
+      <div class="row" style="margin-top:6px"><input type="number" id="shardTarget" min="1" style="width:90px"><span class="muted">ชิ้น</span>
+        <span class="qchips" id="shardChips"><button type="button">9</button><button type="button">45</button><button type="button">90</button><button type="button">207</button></span></div>
+    </div>
+    <div data-for="shard">
+      <div class="tdsec">แหล่งสมบัติ</div>
+      <div class="radios" style="flex-direction:column;margin-top:6px">
+        <label class="checkline"><input type="checkbox" id="shardCabinet">ใช้คุกกี้ที่มีในคลังก่อน</label>
+        <label class="checkline"><input type="checkbox" id="shardFarm">คุกกี้หมดแล้วปั๊มผงต่อ (สุ่มกล่อง 5,000 จนคลังเต็ม ย่อยขยะ เก็บคุกกี้) แล้วกลับมาอีโวในคลัง วนจนถึงเป้า</label>
+      </div>
+    </div>
+    <label class="checkline" data-for="shard"><input type="checkbox" id="craftMissing">วัตถุดิบอีโวไม่พอ ให้ craft ด้วยผง (ปิด = หยุดทำงานเมื่อวัตถุดิบขาด)</label>
+
+    <div data-for="powder tickets">
+      <div class="tdsec">สมบัติที่ไม่ย่อย (ติ๊กเพื่อเก็บไว้)</div>
+      <div class="keeps" id="keeps" style="margin-top:6px"></div>
+    </div>
+    <label class="checkline" data-for="tickets"><input type="checkbox" id="extractGold">ย่อยสมบัติสีทองด้วย (ปกติย่อยแค่ขาว/ฟ้า · ระดับ S ไม่ย่อยเด็ดขาด)</label>
+
+    <div data-for="powder shard"><button class="btn btn-sm" type="button" id="beforeAfter">ดูภาพ before/after</button></div>
+    <div class="baimgs" id="baImgs" hidden>
+      <figure><img id="baBefore" alt="คลังก่อนทำงาน"><figcaption>ก่อน</figcaption></figure>
+      <figure><img id="baAfter" alt="คลังหลังทำงาน"><figcaption>หลัง</figcaption></figure>
+    </div>
+
+    <hr>
+    <div>
+      <div class="tdsec">หลังทำงานเสร็จสิ้นให้ทำอะไรต่อ?</div>
+      <div class="radios" style="margin-top:6px">
+        <label><input type="radio" name="after" value="bot">กดเริ่มบอท</label>
+        <label><input type="radio" name="after" value="lobby">กลับไปหน้าล็อบบี้</label>
+        <label><input type="radio" name="after" value="quit">ออกจากเกม</label>
+      </div>
+    </div>
+
+    <div class="warnbox" id="warnBox">
+      <b id="warnTitle"></b>
+      <ul id="warnList"></ul>
+      <label class="checkline"><input type="checkbox" id="favConfirm">ปักดาวสมบัติที่ต้องการเก็บไว้แล้ว</label>
+    </div>
+  </div>
+  <div class="tdfoot">
+    <span class="muted" id="tdHint"></span>
+    <button class="btn btn-plain" type="button" id="tdClose">ปิด</button>
+    <button class="btn btn-go" type="button" id="tdStart"><svg class="ico"><use href="#i-play"/></svg>เริ่มการทำงาน</button>
+  </div>
+</dialog>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fields = [...document.querySelectorAll("[data-key]")];
+const DEFAULTS = {
+  dry_run: false,
+  buy_hp_extension: false, buy_power_jelly: false, buy_double_xp: true,
+  buy_fast_start: false, buy_cookie_relay: false,
+  use_desired_random_boost: false, boost_index: 0,
+  auto_jump: true, stop_jump_when_done: false, jump_limit: 30,
+  use_fast_start: false, use_cookie_relay: true, exit_after_relay: false,
+  send_hearts: false, heart_hours: 1,
+  mail_hearts: true, mail_minutes: 30,
+  detect_relic: false, close_popups: true, restart_on_lost: true,
+  next_game_delay_min: 2, next_game_delay_max: 5, result_delay: 5,
+  stop_rounds: false, stop_rounds_n: 50, stop_minutes: false, stop_minutes_n: 120,
+  stop_hearts: false, stop_hearts_n: 20, stop_coins: false, stop_coins_n: 1000000,
+};
+const FARM = {
+  buy_hp_extension: true, buy_power_jelly: true, buy_double_xp: true, use_desired_random_boost: false,
+  auto_jump: true, use_fast_start: false, use_cookie_relay: true, stop_jump_when_done: false, exit_after_relay: false,
+};
+const MAX_LOG_LINES = 1000;
+let options = { ...DEFAULTS };
+// saved option sets: [{ name, options }]; the old "farm" quick setting is the first one until the user changes the list
+let presets = [{ name: "เซตฟาร์ม", options: { ...DEFAULTS, ...FARM } }], activePreset = -1;
+
+function cleanOptions(saved) {
+  const clean = { ...DEFAULTS };
+  for (const key of Object.keys(DEFAULTS)) if (saved && typeof saved[key] === typeof DEFAULTS[key]) clean[key] = saved[key];
+  return clean;
+}
+function renderPresets(editIndex = -1) {
+  $("presetList").replaceChildren(...presets.map((p, i) => {
+    const row = Object.assign(document.createElement("div"), { className: "item devrow" });
+    let label;
+    if (i === editIndex) {
+      label = Object.assign(document.createElement("input"), { type: "text", value: p.name, maxLength: 40, className: "presetname",
+        ariaLabel: "ชื่อเซ็ท" });
+      const done = () => { p.name = label.value.trim() || p.name; renderPresets(); saveOptions(); };
+      label.onkeydown = (e) => { if (e.key === "Enter") label.blur(); if (e.key === "Escape") { label.value = p.name; label.blur(); } };
+      label.onblur = done;
+      setTimeout(() => { label.focus(); label.select(); });
+    } else {
+      label = document.createElement("span");
+      label.append(Object.assign(document.createElement("b"), { textContent: p.name }));
+      if (i === activePreset) label.append(Object.assign(document.createElement("span"), { className: "chip", style: "margin-left:8px", textContent: "ใช้อยู่" }));
+    }
+    const btn = (text, title, fn, cls = "") => Object.assign(document.createElement("button"), { className: "btn btn-sm " + cls, textContent: text, title, onclick: fn, disabled: running });
+    const right = Object.assign(document.createElement("span"), { className: "row" });
+    right.append(
+      btn("ใช้", "โหลดการตั้งค่าของเซ็ทนี้", () => {
+        options = cleanOptions(p.options); activePreset = i;
+        applyOptions(); saveOptions(); renderPresets(); note(`ใช้เซ็ท "${p.name}" แล้ว`);
+      }),
+      btn("บันทึกทับ", "เก็บการตั้งค่าตอนนี้ลงเซ็ทนี้", () => {
+        readOptions(); p.options = { ...options }; activePreset = i;
+        saveOptions(); renderPresets(); note(`บันทึกการตั้งค่าตอนนี้ลงเซ็ท "${p.name}" แล้ว`);
+      }),
+      btn("เปลี่ยนชื่อ", "เปลี่ยนชื่อเซ็ท", () => renderPresets(i)),
+      btn("ลบ", "ลบเซ็ทนี้", () => {
+        if (!confirm(`ลบเซ็ท "${p.name}" ?`)) return;
+        presets.splice(i, 1);
+        activePreset = activePreset === i ? -1 : activePreset > i ? activePreset - 1 : activePreset;
+        renderPresets(); saveOptions();
+      }, "btn-danger"),
+    );
+    row.append(label, right);
+    return row;
+  }));
+  if (!presets.length) $("presetList").textContent = 'ยังไม่มีเซ็ท กด "เซฟเซ็ท" เพื่อเก็บการตั้งค่าตอนนี้';
+}
+let since = 0, running = false, boostsLoaded = false, saveTimer = 0, shotUrl = "", closing = false, shotTick = 0;
+// several emulators: `devices` = found, `selected` = the ones the bot plays on, `current` = the one being looked at
+let devices = [], selected = [], current = "", sessions = [], currentRunning = false;
+const deviceParam = () => "device=" + encodeURIComponent(current);
+function deviceLabel(serial) {
+  const i = devices.findIndex((d) => d.serial === serial);
+  return i >= 0 ? `จอ ${i + 1}` : (serial || "อีมูเลเตอร์");
+}
+
+// ---------- pages ----------
+function showPage(name) {
+  for (const page of document.querySelectorAll("section[data-page]")) page.hidden = page.dataset.page !== name;
+  for (const nav of document.querySelectorAll(".nav")) nav.classList.toggle("active", nav.dataset.page === name);
+  document.querySelector(".content").scrollTop = 0;
+  if (name === "log") $("log").scrollTop = $("log").scrollHeight;
+  if (typeof updateLive === "function") updateLive();
+  try { localStorage.setItem("page", name); } catch (e) {}
+}
+document.addEventListener("click", (e) => {
+  const target = e.target.closest(".nav, [data-goto]");
+  if (target) showPage(target.dataset.page || target.dataset.goto);
+});
+
+// ---------- log ----------
+function addLog(lines) {
+  const log = $("log");
+  const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 40;
+  for (const line of lines) {
+    const row = document.createElement("div");
+    row.textContent = line;
+    if (/❌|💥|⚠️|ERROR|Traceback/.test(line)) row.className = "err";
+    else if (/🧪|⏳/.test(line)) row.className = "dim";
+    log.append(row);
+  }
+  while (log.childElementCount > MAX_LOG_LINES) log.firstElementChild.remove();
+  if (atBottom) log.scrollTop = log.scrollHeight;
+  const last = lines[lines.length - 1];
+  if (last) $("nowText").textContent = last.replace(/^\[[^\]]*\]\s*/, "");
+}
+const note = (msg) => addLog([`[${new Date().toLocaleTimeString("th-TH", { hour12: false })}] ${msg}`]);
+
+async function post(path, body) {
+  const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+  return res.json();
+}
+
+// ---------- options ----------
+function applyOptions() {
+  for (const el of fields) {
+    const value = options[el.dataset.key];
+    if (el.type === "checkbox") el.checked = !!value;
+    else el.value = value;
+  }
+  syncOptions();
+}
+function readOptions() {
+  for (const el of fields) {
+    const key = el.dataset.key;
+    if (el.type === "checkbox") options[key] = el.checked;
+    else if (el.type === "number") {
+      const n = Math.round(Number(el.value));
+      options[key] = el.value !== "" && Number.isFinite(n) ? Math.max(Number(el.min) || 0, n) : DEFAULTS[key];
+    }
+    else options[key] = Number(el.value) || 0;
+  }
+  syncOptions();
+}
+function syncOptions() {
+  // inputs that only matter when another switch is on are greyed out while it is off
+  for (const el of document.querySelectorAll("[data-needs]")) el.disabled = !options[el.dataset.needs];
+  // status page: the switches that are on
+  const names = fields.filter((el) => el.type === "checkbox" && el.checked && !el.disabled)
+    .map((el) => el.closest("label").querySelector(".name").textContent);
+  $("chips").replaceChildren(...names.map((name) => Object.assign(document.createElement("span"), { className: "chip", textContent: name })));
+  if (options.send_hearts) $("chips").append(Object.assign(document.createElement("span"), { className: "chip", textContent: `ส่งหัวใจทุก ${options.heart_hours} ชม.` }));
+  if (!names.length && !options.send_hearts) $("chips").textContent = "ยังไม่ได้เปิดตัวเลือกใด";
+}
+function saveOptions() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => post("/config", { ...options, selected_devices: selected, tools: toolOptions, presets, active_preset: activePreset }).catch(() => {}), 400);
+}
+async function loadOptions() {
+  try {
+    const saved = await (await fetch("/config")).json();
+    for (const key of Object.keys(DEFAULTS)) {
+      if (typeof saved[key] === typeof DEFAULTS[key]) options[key] = saved[key];
+    }
+    if (Array.isArray(saved.selected_devices)) selected = saved.selected_devices.filter((s) => typeof s === "string");
+    if (Array.isArray(saved.presets)) {
+      presets = saved.presets.filter((p) => p && typeof p.name === "string" && p.options && typeof p.options === "object")
+        .map((p) => ({ name: p.name.slice(0, 40), options: cleanOptions(p.options) }));
+      if (Number.isInteger(saved.active_preset) && saved.active_preset < presets.length) activePreset = saved.active_preset;
+    }
+    if (saved.tools && typeof saved.tools === "object") {
+      for (const key of Object.keys(TOOL_DEFAULTS)) {
+        const value = saved.tools[key];
+        if (Array.isArray(TOOL_DEFAULTS[key]) ? Array.isArray(value) && value.every((v) => v in KEEPS) : typeof value === typeof TOOL_DEFAULTS[key]) toolOptions[key] = value;
+      }
+    }
+  } catch (e) {}
+  applyOptions();
+  renderPresets();
+}
+
+// ---------- emulators ----------
+function setCurrent(serial) {
+  if (serial === current) return;
+  current = serial;
+  since = 0;
+  $("log").replaceChildren();
+  $("nowText").textContent = "-";
+  renderDevices();
+  poll();
+  updateLive();
+  // a capture of the previous emulator may still be on its way: take this one's picture after it
+  Promise.resolve(shot.pending).catch(() => {}).then(() => shot().catch(shotFailed));
+}
+function renderDevices() {
+  const info = Object.fromEntries(sessions.map((s) => [s.device, s]));
+  // the list on the emulator page
+  $("devList").replaceChildren(...devices.map((d) => {
+    const row = Object.assign(document.createElement("div"), { className: "item devrow" });
+    const label = Object.assign(document.createElement("label"), { className: "opt" });
+    const sw = Object.assign(document.createElement("input"), { type: "checkbox", className: "sw", checked: selected.includes(d.serial), disabled: running });
+    sw.onchange = () => {
+      selected = devices.map((x) => x.serial).filter((s) => (s === d.serial ? sw.checked : selected.includes(s)));
+      if (!selected.includes(current)) setCurrent(selected[0] || d.serial);
+      saveOptions(); renderDevices();
+    };
+    const text = document.createElement("span");
+    text.append(Object.assign(document.createElement("b"), { textContent: deviceLabel(d.serial) }),
+      Object.assign(document.createElement("div"), { className: "muted", textContent: `${d.serial} · ${d.game ? "มีเกม CookieRun" : "ไม่พบเกม CookieRun"}` }));
+    label.append(sw, text);
+    const s = info[d.serial];
+    const state = Object.assign(document.createElement("span"), { className: "muted",
+      textContent: s && s.running ? `กำลังทำงาน · ${s.round_count} รอบ` : (selected.includes(d.serial) ? "พร้อม" : "ไม่ใช้") });
+    const view = Object.assign(document.createElement("button"), { className: "btn btn-sm", textContent: d.serial === current ? "กำลังดูอยู่" : "ดูจอนี้", disabled: d.serial === current });
+    view.onclick = () => setCurrent(d.serial);
+    const right = Object.assign(document.createElement("span"), { className: "row" });
+    right.append(state, view);
+    row.append(label, right);
+    return row;
+  }));
+  // the switcher above every page, when the bot plays on more than one emulator
+  const bar = $("devbar");
+  bar.hidden = selected.length < 2 || location.protocol === "file:";
+  bar.replaceChildren(...selected.map((serial) => {
+    const s = info[serial];
+    const chip = Object.assign(document.createElement("button"), { className: "devchip" + (serial === current ? " active" : "") });
+    chip.append(Object.assign(document.createElement("span"), { className: "dot" + (s && s.running ? " on" : "") }),
+      deviceLabel(serial) + (s && (s.running || s.round_count) ? ` · ${s.round_count} รอบ` : ""));
+    chip.onclick = () => setCurrent(serial);
+    return chip;
+  }));
+}
+async function loadDevices(refresh) {
+  $("findDevices").disabled = true;
+  $("devHint").textContent = "กำลังค้นหาอีมูเลเตอร์...";
+  try {
+    const res = await fetch("/devices" + (refresh ? "?refresh=1" : ""));
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    devices = data.devices;
+    selected = selected.filter((s) => devices.some((d) => d.serial === s));
+    if (!selected.length) selected = devices.filter((d) => d.game).map((d) => d.serial);
+    if (!selected.length && devices.length) selected = [devices[0].serial];
+    $("devHint").textContent = devices.length
+      ? `พบ ${devices.length} จอ เปิดสวิตช์จอที่ต้องการ แล้วกด "เริ่มบอท" บอทจะเล่นทุกจอที่เปิดไว้พร้อมกันด้วยตั้งค่าชุดเดียวกัน`
+      : 'ไม่พบอีมูเลเตอร์ที่เปิดอยู่ เปิดอีมูเลเตอร์และ ADB debugging แล้วกด "ค้นหาอีกครั้ง"';
+  } catch (e) {
+    $("devHint").textContent = "ค้นหาไม่ได้: " + e.message;
+  }
+  $("findDevices").disabled = false;
+  if (!selected.includes(current)) setCurrent(selected[0] || "");
+  renderDevices();
+}
+
+// ---------- status ----------
+function setRunning(on, rounds, tool) {
+  running = on;
+  $("toggleIcon").setAttribute("href", on ? "#i-stop" : "#i-play");
+  $("toggle").classList.toggle("running", on);
+  $("statusDot").className = "dot" + (on ? " on" : "");
+  const active = sessions.filter((s) => s.running).length;
+  $("toggleText").textContent = (on ? (tool ? "หยุดเครื่องมือ" : "หยุดบอท") : "เริ่มบอท") + (selected.length > 1 ? ` (${on ? active : selected.length} จอ)` : "");
+  const doing = tool && TOOLS[tool] ? `กำลังทำงาน: ${TOOLS[tool].title}` : "กำลังทำงาน";
+  $("statusText").textContent = !on ? "หยุดอยู่ - พร้อมเริ่ม"
+    : selected.length > 1 ? `${doing} ${active} จาก ${selected.length} จอ · กำลังดู${deviceLabel(current)}` : doing;
+  for (const card of document.querySelectorAll(".tool")) card.disabled = on;
+  $("toolsHint").textContent = on ? "หยุดบอท/เครื่องมือที่ทำงานอยู่ก่อนจึงจะเริ่มเครื่องมือได้" : "เปิดเกมค้างไว้ที่หน้าล็อบบี้ แล้วเลือกเครื่องมือ";
+  // grand total, when more than one emulator has played
+  const played = sessions.filter((s) => s.running || s.round_count);
+  $("allTotals").hidden = played.length < 2;
+  const sum = (key) => played.reduce((total, s) => total + (s[key] || 0), 0);
+  $("allTotals").textContent = `รวมทุกจอ: ${sum("round_count")} รอบ · เงิน ${sum("coins").toLocaleString("en-US")} · XP ${sum("xp").toLocaleString("en-US")}`;
+  if (!currentRunning) $("nowText").textContent = "-";
+  $("opts").disabled = on;
+  $("savePreset").disabled = on;
+  for (const b of $("presetList").querySelectorAll("button")) b.disabled = on;
+  $("defaults").disabled = on;
+  $("heartsNow").hidden = !on || !!tool;
+  $("optsHint").textContent = on ? "หยุดบอทก่อนจึงจะแก้ตั้งค่าได้" : "ค่าที่เลือกจะถูกจำไว้ให้";
+}
+
+async function poll() {
+  if (closing) return;
+  try {
+    const asked = current;
+    const res = await fetch(`/status?${deviceParam()}&since=${since}`);
+    if (res.status === 401) { location.href = "/"; return; }  // opened from another device and logged out
+    const data = await res.json();
+    if (asked !== current) return;   // switched to another emulator while waiting
+    if (!boostsLoaded) {
+      const select = document.querySelector('[data-key="boost_index"]');
+      data.boosts.forEach((name, i) => select.add(new Option(name, i)));
+      select.value = options.boost_index;
+      if (data.version) {
+        $("version").textContent = "เวอร์ชัน " + data.version;
+        $("aboutVersion").textContent = `เวอร์ชัน ${data.version} - บอทเล่น CookieRun Classic อัตโนมัติผ่านอีมูเลเตอร์`;
+      }
+      boostsLoaded = true;
+    }
+    if (data.lines.length) addLog(data.lines);
+    since = data.total;
+    sessions = data.sessions || [];
+    currentRunning = data.running;
+    const wasRunning = running;
+    setRunning(data.any_running ?? data.running, data.rounds, data.tool);
+    if (data.stats) showStats(data.stats);
+    if (data.totals) {
+      $("coins").textContent = (data.totals.coins || 0).toLocaleString("en-US");
+      $("xp").textContent = (data.totals.xp || 0).toLocaleString("en-US");
+      $("coins").title = $("xp").title = `จาก ${data.totals.rounds} รอบ ทุกอีมูเลเตอร์`;
+    }
+    if (data.treasure) showTreasure(data.treasure);
+    // the emulator list and switcher only change when a bot starts, stops or finishes a round
+    const signature = JSON.stringify([running, current, selected, sessions.map((s) => [s.device, s.running, s.round_count])]);
+    if (signature !== poll.signature || wasRunning !== running) { poll.signature = signature; renderDevices(); }
+    // keep the picture on the status page fresh while the bot works
+    if (data.running &&!$("live").checked && !document.querySelector('section[data-page="status"]').hidden && ++shotTick % 3 === 0) shot().catch(shotFailed);
+  } catch (e) {
+    $("statusDot").className = "dot bad";
+    $("statusText").textContent = "ติดต่อตัวบอทไม่ได้ (โปรแกรมถูกปิด?)";
+  }
+}
+
+// ---------- emulator screen ----------
+const setScreenInfo = (text) => document.querySelectorAll(".screen-info").forEach((el) => (el.textContent = text));
+async function shot() {
+  shot.pending ??= (async () => {
+    try {
+      const res = await fetch("/screenshot?" + deviceParam());
+      if (!res.ok) throw new Error((await res.json()).error || res.statusText);
+      const url = URL.createObjectURL(await res.blob());
+      const imgs = [...document.querySelectorAll(".shot-img")].filter((el) => !el.dataset.live), img = imgs[0];
+      if (!img) return;  // every picture is showing the live view
+      await Promise.all(imgs.map((el) => new Promise((ok, fail) => { el.onload = ok; el.onerror = fail; el.src = url; })));
+      if (shotUrl) URL.revokeObjectURL(shotUrl);
+      shotUrl = url;
+      imgs.forEach((el) => (el.hidden = false));
+      document.querySelectorAll(".shot-msg").forEach((el) => (el.hidden = true));
+      const good = img.naturalWidth === 1280 && img.naturalHeight === 720;
+      setScreenInfo(`เชื่อมต่อแล้ว ${img.naturalWidth}x${img.naturalHeight}` + (good ? " ✓" : " ⚠ ต้องเป็น 1280x720"));
+    } finally { shot.pending = null; }
+  })();
+  return shot.pending;
+}
+// ---------- live view ----------
+// "ดูสด" plays the emulator in real time on the picture of the page being looked at; the other pictures keep
+// the last screenshot so only one stream runs at a time. The emulator's own H.264 video (/live.h264) is decoded
+// right here with WebCodecs and drawn on a canvas, which is as smooth as the emulator itself. Where that is
+// not possible it falls back to /live, a JPEG stream made by the app.
+let h264Broken = false;
+
+function startH264(img, query) {
+  const box = img.parentElement;
+  const canvas = Object.assign(document.createElement("canvas"), { className: "live-canvas" });
+  box.append(canvas);
+  const ctx = canvas.getContext("2d");
+  const abort = new AbortController();
+  let decoder = null, sps = null, pps = null, codec = "", frames = 0, stopped = false;
+  const START = new Uint8Array([0, 0, 0, 1]);
+  const join = (...parts) => {
+    const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+    let at = 0;
+    for (const p of parts) { out.set(p, at); at += p.length; }
+    return out;
+  };
+  const hex = (b) => b.toString(16).padStart(2, "0");
+  function configure() {
+    const wanted = "avc1." + hex(sps[1]) + hex(sps[2]) + hex(sps[3]);
+    if (decoder && wanted === codec) return;
+    if (decoder) try { decoder.close(); } catch (e) {}
+    codec = wanted;
+    decoder = new VideoDecoder({
+      output: (frame) => {
+        if (canvas.width !== frame.displayWidth) { canvas.width = frame.displayWidth; canvas.height = frame.displayHeight; }
+        ctx.drawImage(frame, 0, 0);
+        frame.close();
+        frames++;
+      },
+      error: () => fail(),
+    });
+    decoder.configure({ codec, optimizeForLatency: true });  // no description: the data stays in Annex B form
+  }
+  function nal(unit) {
+    const type = unit[0] & 31;
+    if (type === 7) { sps = unit; return; }
+    if (type === 8) { pps = unit; return; }
+    if (type !== 1 && type !== 5) return;
+    const key = type === 5;
+    if (key && sps && pps) configure();
+    if (!decoder || decoder.state !== "configured") return;  // wait for the first key frame
+    const data = key ? join(START, sps, START, pps, START, unit) : join(START, unit);
+    decoder.decode(new EncodedVideoChunk({ type: key ? "key" : "delta", timestamp: performance.now() * 1000, data }));
+  }
+  function fail() {
+    if (stopped) return;
+    stop();
+    if (!frames) h264Broken = true;  // never showed a picture: use the JPEG stream from now on
+    if (img.dataset.live) { img.dataset.live = ""; setTimeout(updateLive, frames ? 1000 : 0); }
+  }
+  function stop() {
+    stopped = true;
+    abort.abort();
+    if (decoder) try { decoder.close(); } catch (e) {}
+    canvas.remove();
+  }
+  (async () => {
+    try {
+      const res = await fetch("/live.h264?" + query + "&q=" + $("liveQuality").value, { signal: abort.signal });
+      if (!res.ok || !res.body) throw new Error("no stream");
+      const reader = res.body.getReader();
+      let buf = new Uint8Array(0);
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf = buf.length ? join(buf, value) : value;
+        // split at start codes (00 00 01, or 00 00 00 01); the unit after the last start code may still be
+        // incomplete, so it is kept (with its start code) for the next read
+        let payload = -1, lastCode = -1;
+        for (let i = 0; i + 2 < buf.length; i++) {
+          if (buf[i] === 0 && buf[i + 1] === 0 && buf[i + 2] === 1) {
+            const code = i > 0 && buf[i - 1] === 0 ? i - 1 : i;
+            if (payload >= 0) nal(buf.subarray(payload, code));
+            payload = i + 3;
+            lastCode = code;
+            i += 2;
+          }
+        }
+        if (lastCode > 0) buf = buf.slice(lastCode);
+      }
+      fail();  // the stream ended
+    } catch (e) {
+      if (!stopped) fail();
+    }
+  })();
+  return { stop, frames: () => frames };
+}
+
+function updateLive() {
+  const on = $("live").checked && location.protocol !== "file:";
+  for (const img of document.querySelectorAll(".shot-img")) {
+    const page = img.closest("section[data-page]");
+    const want = on && page && !page.hidden ? deviceParam() : "";
+    if ((img.dataset.live || "") === want) continue;
+    img.dataset.live = want;
+    img.onload = img.onerror = null;
+    if (img.player) { img.player.stop(); img.player = null; img.hidden = !shotUrl; }
+    if (want) {
+      img.hidden = false;
+      img.parentElement.querySelector(".shot-msg").hidden = true;
+      if (window.VideoDecoder && !h264Broken) {
+        img.hidden = true;  // the canvas of the video takes its place
+        img.player = startH264(img, want);
+      } else {
+        img.onerror = () => { if (img.dataset.live === want) setTimeout(() => { img.dataset.live = ""; updateLive(); }, 2000); };
+        img.src = "/live?" + want + "&t=" + Date.now();
+      }
+    } else if (shotUrl) {
+      img.src = shotUrl;  // closes the JPEG stream
+    } else {
+      img.removeAttribute("src");
+      img.hidden = true;
+    }
+  }
+}
+
+function shotFailed(e) {
+  for (const el of document.querySelectorAll(".shot-img")) {
+    if (el.dataset.live) continue;  // the live view reconnects by itself
+    el.hidden = true;
+    const msg = el.parentElement.querySelector(".shot-msg");
+    msg.hidden = false; msg.textContent = "เชื่อมต่ออีมูเลเตอร์ไม่ได้: " + e.message;
+  }
+  setScreenInfo("เชื่อมต่อไม่ได้");
+}
+
+// ---------- statistics ----------
+const pad = (n) => String(n).padStart(2, "0");
+const clock = (s) => `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
+const minSec = (s) => (s == null ? "-" : `${Math.floor(s / 60)}:${pad(s % 60)} นาที`);
+const num = (n) => (typeof n === "number" ? n.toLocaleString("en-US") : "อ่านไม่ได้");
+const dateTime = (t) => new Date(t * 1000).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "medium" });
+function showStats(st) {
+  $("rounds").textContent = `${st.round_count} รอบ`;
+  $("elapsed").textContent = clock(st.elapsed);
+  $("average").textContent = st.round_count ? minSec(Math.round(st.elapsed / st.round_count)) : "-";
+  $("boxes").textContent = st.boxes;
+  const types = st.box_types || {};
+  let known = 0;
+  for (const n of ["1", "2", "3", "4"]) { $("box" + n).textContent = types[n] ?? 0; known += types[n] || 0; }
+  $("boxnote").hidden = st.boxes <= known;
+  $("boxnote").textContent = `แยกชนิดไม่ได้ ${st.boxes - known} กล่อง (ภาพเก็บไว้ใน results)`;
+  $("coinsSession").textContent = `เริ่มบอทรอบนี้ +${(st.coins || 0).toLocaleString("en-US")}`;
+  $("xpSession").textContent = `เริ่มบอทรอบนี้ +${(st.xp || 0).toLocaleString("en-US")}`;
+  $("coinsAvg").textContent = st.round_count ? Math.round((st.coins || 0) / st.round_count).toLocaleString("en-US") : "-";
+  $("xpAvg").textContent = st.round_count ? Math.round((st.xp || 0) / st.round_count).toLocaleString("en-US") : "-";
+  $("lastRound").textContent = minSec(st.last_seconds);
+  $("cardsSeen").textContent = st.cards_seen;
+  $("cardsSolved").textContent = st.cards_solved;
+  $("roundsBtn").textContent = `ดูรายละเอียดรายรอบ (${st.round_details})`;
+}
+function item(parts, shot) {
+  const row = Object.assign(document.createElement("div"), { className: "item" });
+  if (shot) {
+    const img = Object.assign(document.createElement("img"), { src: "/results/" + shot, alt: "หน้าสรุปผล", loading: "lazy" });
+    img.onclick = () => { $("zoom").querySelector("img").src = img.src; $("zoom").showModal(); };
+    row.append(img);
+  }
+  const text = document.createElement("div");
+  parts.forEach((part, i) => text.append(Object.assign(document.createElement(i ? "div" : "b"), { textContent: part, className: i ? "muted" : "" })));
+  row.append(text);
+  return row;
+}
+function fillList(list, rows, empty) {
+  list.replaceChildren(...rows);
+  if (!rows.length) list.textContent = empty;
+}
+async function openRounds() {
+  const { rounds } = await (await fetch("/rounds?" + deviceParam())).json();
+  fillList($("roundsList"), rounds.reverse().map((r) => item(
+    [`รอบที่ ${r.round}`, `เงิน ${num(r.coins)} · XP ${num(r.xp)}`, `จบเมื่อ ${dateTime(r.time)} · ใช้เวลา ${minSec(r.seconds)}`], r.shot)), "ยังไม่มีรอบที่จบ");
+  $("roundsDlg").showModal();
+}
+async function openHistory() {
+  const { history } = await (await fetch("/history")).json();
+  fillList($("historyList"), history.reverse().map((h) => item([
+    `${dateTime(h.started)} · ${h.round_count} รอบ` + (h.device ? ` · ${deviceLabel(h.device)}` : ""),
+    `ทำงาน ${clock(h.elapsed)}`,
+    `เงิน ${num(h.coins)} · XP ${num(h.xp)}`,
+    `Card Game เจอ ${h.cards_seen} แก้สำเร็จ ${h.cards_solved} · Mystery Box ${h.boxes}` + (h.box_types ? ` (ทองแดง ${h.box_types["1"]} · เงิน ${h.box_types["2"]} · ทอง ${h.box_types["3"]} · สายรุ้ง ${h.box_types["4"]})` : ""),
+  ])), "ยังไม่มีประวัติ (บันทึกเมื่อกดหยุดบอท)");
+  $("historyDlg").showModal();
+}
+$("zoom").onclick = () => $("zoom").close();
+
+// ---------- treasure tools ----------
+const TOOLS = {
+  upgrade: { title: "อัพเกรดสมบัติทุกชิ้นให้ +9", icon: "upgrade", sub: "ไล่ตีบวกสมบัติในคลังทีละชิ้นจนครบ +9 ทุกชิ้นที่ยังตีได้" },
+  powder: { title: "ปั๊มผง (สุ่มสมบัติแล้วย่อย)", icon: "powder", sub: "สุ่มกล่อง 5,000 เหรียญแล้วย่อยสมบัติเป็น Magic Powder จนครบเป้า",
+    keeps: ["cookie", "pill", "hammer", "horse"], warnTitle: "ก่อนเริ่มปั๊มผง กรุณาปักดาวสมบัติที่สำคัญก่อน",
+    warn: ["บอทจะสุ่มสมบัติแล้วย่อยทิ้งเป็นผงโดยอัตโนมัติ (เฉพาะระดับขาว/ฟ้า สมบัติระดับ S ไม่ย่อยทั้งหมด)",
+      "สมบัติที่ปักดาว (Favorite) ไว้ในเกม บอทจะไม่ย่อย - โปรดปักดาวสมบัติที่ต้องการเก็บไว้ทุกชิ้นก่อนกดเริ่ม",
+      "หากสมบัติถูกย่อยทิ้งเพราะไม่ได้ปักดาวไว้ ทางเราจะไม่รับผิดชอบต่อความเสียหายใด ๆ ทั้งสิ้น"] },
+  tickets: { title: "เปิดตั๋วเหลือง (Free Treasure Ticket)", icon: "ticket", sub: "เปิดตั๋วสมบัติฟรี (สีเหลือง) จนคลังเต็ม แล้วย่อยผงให้เหมือน flow ปั๊มผง จากนั้นเปิดต่อจนตั๋วหมด",
+    keeps: ["cookie", "pill", "pearl", "hammer", "horse"], warnTitle: "ก่อนเริ่มเปิดตั๋วเหลือง กรุณาปักดาวสมบัติที่สำคัญก่อน",
+    warn: ["บอทจะเปิดตั๋วจนคลังเต็ม (เกมขึ้น Not enough space!) แล้วย่อยสมบัติในคลังทิ้งเป็นผงโดยอัตโนมัติ (flow เดียวกับปั๊มผง สมบัติระดับ S ไม่ย่อยทั้งหมด)",
+      "สมบัติที่ปักดาว (Favorite) ไว้ในเกม บอทจะไม่ย่อย - โปรดปักดาวสมบัติที่ต้องการเก็บไว้ทุกชิ้นก่อนกดเริ่ม",
+      "หากสมบัติถูกย่อยทิ้งเพราะไม่ได้ปักดาวไว้ ทางเราจะไม่รับผิดชอบต่อความเสียหายใด ๆ ทั้งสิ้น"] },
+  hearts: { title: "ส่งหัวใจให้เพื่อน", icon: "hearts", sub: "เลื่อนรายชื่อเพื่อนขึ้นไปบนสุดก่อน แล้วไล่กดส่งหัวใจลงมาทีละคนจนสุดรายชื่อ" },
+  shard: { title: "ปั๊ม Mystic Shard", icon: "shard", sub: "ตี +9 อีโว แล้วย่อย Famous Choco Chip เป็น Mystic Shard จนครบเป้า",
+    warnTitle: "ก่อนเริ่มปั๊ม Mystic Shard โปรดอ่าน",
+    warn: ["บอทจะค้นหา Famous Choco Chip Cookie ในคลัง ตี +9 (ประมาณ 175,000 เหรียญ/ชิ้น) อีโว (26,000 เหรียญ/ครั้ง สุ่มติด) แล้วย่อยเป็น Mystic Shard 9 ชิ้น",
+      "วัตถุดิบอีโวที่ขาด บอทจะ craft ด้วย Magic Powder ให้ (ปิดได้ในตัวเลือก)",
+      "บอทย่อยเฉพาะ Famous Honey Chip Cookie ที่เพิ่งอีโวในรอบนี้เท่านั้น ไม่ย่อยสมบัติอื่นเลย และไม่แตะ Famous Honey Chip Cookie ที่มีอยู่เดิม",
+      "โหมด \"ปั๊มผงต่อ\": คุกกี้หมดแล้วจะสุ่มกล่อง 5,000 จนคลังเต็ม ย่อยของขาว/ฟ้าทิ้งตามกติกาปั๊มผง (เก็บคุกกี้และของที่ติ๊กไว้ในปั๊มผง) แล้วกลับมาตี +9 อีโว ย่อยเป็น Shard วนจนครบเป้า - ใช้เหรียญมาก",
+      "หากเหรียญ/ผงหมดระหว่างทาง บอทจะหยุดเอง หากสมบัติถูกย่อยเพราะไม่ได้ปักดาวไว้ ทางเราไม่รับผิดชอบ"] },
+};
+const KEEPS = {
+  cookie: { name: "คุกกี้", note: "เก็บไว้ ไม่ย่อย", img: "tool-img/cookie.png" },
+  pill: { name: "ยาเหลือง", note: "เก็บไว้ ไม่ย่อย", img: "tool-img/pill.png" },
+  pearl: { name: "ไข่มุก", note: "เก็บไว้ ไม่ย่อย", img: "tool-img/pearl.png" },
+  hammer: { name: "ค้อน", note: "เก็บไว้ ทุกเครื่องมือ", img: "tool-img/hammer.png" },
+  horse: { name: "ม้า", note: "เก็บไว้ ทุกเครื่องมือ", img: "tool-img/horse.png" },
+};
+const TOOL_DEFAULTS = {
+  powder_target: 1000, draws_before_extract: 0, shard_target: 9, shard_cabinet: true, shard_farm: false, craft_missing: true,
+  extract_gold: false, after: "lobby", keep_powder: ["cookie", "pill", "hammer", "horse"], keep_tickets: ["cookie", "pill", "pearl", "hammer", "horse"],
+};
+let toolOptions = { ...TOOL_DEFAULTS }, openTool = null, treasure = {};
+
+function renderKeeps() {
+  const key = "keep_" + openTool;
+  $("keeps").replaceChildren(...(TOOLS[openTool].keeps || []).map((id) => {
+    const k = KEEPS[id];
+    const b = Object.assign(document.createElement("button"), { type: "button", className: "keep" + (toolOptions[key].includes(id) ? " on" : "") });
+    b.append(Object.assign(document.createElement("img"), { src: k.img, alt: "" }));
+    b.append(Object.assign(document.createElement("b"), { textContent: k.name }), Object.assign(document.createElement("small"), { textContent: k.note }));
+    b.onclick = () => {
+      toolOptions[key] = toolOptions[key].includes(id) ? toolOptions[key].filter((x) => x !== id) : [...toolOptions[key], id];
+      renderKeeps(); saveOptions();
+    };
+    return b;
+  }));
+}
+function shardSummary() {
+  const target = Math.max(1, Math.round(Number($("shardTarget").value) || 0));
+  const cookies = Math.ceil(target / 9);
+  const now = typeof treasure.shard === "number" ? treasure.shard : null;
+  $("shardSummary").innerHTML = "";
+  $("shardSummary").append(
+    `Mystic Shard ${now ?? "?"} → ${now == null ? "?" : now + cookies * 9} (ได้เพิ่ม ${cookies * 9})`, document.createElement("br"),
+    `ย่อยคุกกี้ ${cookies} ชิ้น · ใช้ไป ~${(cookies * 201000).toLocaleString("en-US")} เหรียญ (+5,000 ต่อกล่องถ้าต้องสุ่ม) · ผงตามวัตถุดิบที่ขาด`);
+  for (const b of $("shardChips").children) b.classList.toggle("on", Number(b.textContent) === target);
+}
+function syncToolDialog() {
+  const needsFav = !["upgrade", "hearts"].includes(openTool);
+  const noSource = openTool === "shard" && !$("shardCabinet").checked && !$("shardFarm").checked;
+  $("tdStart").disabled = running || (needsFav && !$("favConfirm").checked) || noSource;
+  $("tdHint").textContent = running ? "หยุดบอท/เครื่องมือที่ทำงานอยู่ก่อน" : noSource ? "เลือกแหล่งสมบัติอย่างน้อย 1 ข้อ" : needsFav && !$("favConfirm").checked ? "ติ๊กยืนยันการปักดาวก่อน" : "";
+}
+function showToolDialog(name) {
+  openTool = name;
+  const t = TOOLS[name];
+  $("tdIcon").src = `tool-img/${t.icon}.png`;
+  $("tdTitle").textContent = t.title;
+  $("tdSub").textContent = t.sub;
+  for (const el of $("toolDlg").querySelectorAll("[data-for]")) el.hidden = !el.dataset.for.split(" ").includes(name);
+  $("powderTarget").value = toolOptions.powder_target;
+  $("drawsBefore").value = toolOptions.draws_before_extract;
+  $("shardTarget").value = toolOptions.shard_target;
+  $("craftMissing").checked = toolOptions.craft_missing;
+  $("extractGold").checked = toolOptions.extract_gold;
+  $("heartRepeat").checked = !!options.send_hearts;
+  $("heartHours").value = options.heart_hours;
+  $("heartHours").disabled = !options.send_hearts;
+  $("shardCabinet").checked = toolOptions.shard_cabinet;
+  $("shardFarm").checked = toolOptions.shard_farm;
+  for (const r of document.querySelectorAll('input[name="after"]')) r.checked = r.value === toolOptions.after;
+  $("warnBox").hidden = !t.warn;
+  if (t.warn) {
+    $("warnTitle").textContent = t.warnTitle;
+    $("warnList").replaceChildren(...t.warn.map((text) => Object.assign(document.createElement("li"), { textContent: text })));
+  }
+  $("favConfirm").checked = false;
+  $("baImgs").hidden = true;
+  if (t.keeps) renderKeeps();
+  shardSummary();
+  syncToolDialog();
+  $("toolDlg").showModal();
+}
+function readToolDialog() {
+  const n = (id, min, def) => { const v = Math.round(Number($(id).value)); return Number.isFinite(v) && $(id).value !== "" ? Math.max(min, v) : def; };
+  toolOptions.powder_target = n("powderTarget", 1, TOOL_DEFAULTS.powder_target);
+  toolOptions.draws_before_extract = n("drawsBefore", 0, 0);
+  toolOptions.shard_target = n("shardTarget", 1, 9);
+  toolOptions.craft_missing = $("craftMissing").checked;
+  toolOptions.extract_gold = $("extractGold").checked;
+  toolOptions.shard_cabinet = $("shardCabinet").checked;
+  toolOptions.shard_farm = $("shardFarm").checked;
+  toolOptions.after = document.querySelector('input[name="after"]:checked')?.value || "lobby";
+  if (openTool === "hearts") {  // repeat sending: a bot option, used while the bot farms
+    options.send_hearts = $("heartRepeat").checked;
+    const h = Math.round(Number($("heartHours").value));
+    options.heart_hours = Number.isFinite(h) && h >= 1 ? h : 1;
+    $("heartHours").disabled = !options.send_hearts;
+    syncOptions();
+  }
+}
+function showTreasure(t) {
+  treasure = t || {};
+  const fmt = (v) => (typeof v === "number" ? v.toLocaleString("en-US") : null);
+  if (fmt(treasure.powder)) $("lastPowder").textContent = fmt(treasure.powder);
+  if (fmt(treasure.shard)) $("lastShard").textContent = fmt(treasure.shard);
+}
+for (const card of document.querySelectorAll(".tool")) card.onclick = () => showToolDialog(card.dataset.tool);
+$("toolDlg").addEventListener("input", () => { readToolDialog(); shardSummary(); syncToolDialog(); saveOptions(); });
+$("toolDlg").addEventListener("change", () => { readToolDialog(); syncToolDialog(); saveOptions(); });
+$("shardChips").onclick = (e) => { if (e.target.tagName === "BUTTON") { $("shardTarget").value = e.target.textContent; readToolDialog(); shardSummary(); saveOptions(); } };
+$("tdX").onclick = $("tdClose").onclick = () => $("toolDlg").close();
+$("beforeAfter").onclick = () => {
+  const { toolbefore, toolafter } = treasure;
+  if (!toolbefore && !toolafter) { $("beforeAfter").textContent = "ยังไม่มีภาพ - บอทจะถ่ายคลังตอนเริ่มและตอนจบการทำงาน"; return; }
+  $("baBefore").src = toolbefore ? "/results/" + toolbefore : "";
+  $("baAfter").src = toolafter ? "/results/" + toolafter : "";
+  $("baImgs").hidden = false;
+};
+for (const img of [$("baBefore"), $("baAfter")]) img.onclick = () => { if (img.src) { $("zoom").querySelector("img").src = img.src; $("zoom").showModal(); } };
+$("tdStart").onclick = async () => {
+  readToolDialog();
+  readOptions();
+  const name = openTool;
+  const body = {
+    tool: name, devices: selected, after: toolOptions.after,
+    // the bot started afterwards should not send hearts again right away
+    bot: { ...options, hearts_just_sent: name === "hearts" },
+    keep: toolOptions["keep_" + (name === "shard" ? "powder" : name)] || [],  // shard farms boxes like the powder tool extract_gold: name === "tickets" && toolOptions.extract_gold,
+    powder_target: toolOptions.powder_target, draws_before_extract: toolOptions.draws_before_extract,
+    shard_target: toolOptions.shard_target, shard_buy_boxes: toolOptions.shard_farm, shard_use_cabinet: toolOptions.shard_cabinet, craft_missing: toolOptions.craft_missing,
+  };
+  $("tdStart").disabled = true;
+  try {
+    const res = await post("/tool", body);
+    if (res.error) note("❌ เริ่มเครื่องมือไม่ได้: " + res.error);
+    else { $("toolDlg").close(); note("🧰 เริ่ม: " + TOOLS[name].title); showPage("log"); }
+    await poll();
+  } catch (e) { note("❌ ผิดพลาด: " + e.message); }
+  syncToolDialog();
+};
+
+// ---------- remote control ----------
+function showRemote(r) {
+  $("remoteOn").checked = r.enabled;
+  $("remoteOn").disabled = !r.has_password && !r.enabled;
+  $("remoteDot").className = "dot" + (r.enabled ? " on" : "");
+  $("remoteHint").textContent = !r.has_password ? "ต้องตั้งรหัสผ่านก่อน" : r.enabled ? `เปิดอยู่ (พอร์ต ${r.port})` : "ปิดอยู่";
+  $("remotePass").placeholder = r.has_password ? "ตั้งรหัสผ่านใหม่ (มีรหัสแล้ว)" : "ตั้งรหัสผ่าน";
+  $("remoteLinks").hidden = !r.enabled;
+  $("remoteList").replaceChildren(...r.addresses.map((a) => {
+    const url = `http://${a}:${r.port}`;
+    const row = Object.assign(document.createElement("div"), { className: "item devrow" });
+    row.append(Object.assign(document.createElement("b"), { textContent: url }),
+      Object.assign(document.createElement("span"), { className: "muted", textContent: a.startsWith("100.") ? "Tailscale (นอกบ้าน)" : "Wi-Fi / LAN (ในบ้าน)" }));
+    return row;
+  }));
+  if (r.enabled && !r.addresses.length) $("remoteList").textContent = "ไม่พบที่อยู่ในเครือข่าย (คอมต่อเน็ตอยู่ไหม?)";
+}
+async function loadRemote() {
+  const res = await fetch("/remote");
+  if (!res.ok) { $("remoteNav").hidden = true; return; }  // opened from another device: settings stay on the home computer
+  showRemote(await res.json());
+}
+async function saveRemote(body) {
+  $("remoteMsg").textContent = "";
+  const res = await fetch("/remote", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok) { $("remoteMsg").textContent = "❌ " + data.error; await loadRemote(); return false; }
+  showRemote(data);
+  return true;
+}
+
+// ---------- start ----------
+// Opened by double-click (file://): wait for the bot's server, then jump to it
+async function findServer() {
+  for (let port = 8000; port < 8010; port++) {
+    try {
+      await fetch("http://127.0.0.1:" + port + "/status", { mode: "no-cors" });
+      location.href = "http://127.0.0.1:" + port + "/";
+      return;
+    } catch (e) {}
+  }
+  setTimeout(findServer, 2000);
+}
+
+if (location.protocol === "file:") {
+  for (const page of document.querySelectorAll("section[data-page]")) page.hidden = true;
+  $("nav").hidden = true;
+  $("foot").hidden = true;
+  $("offline").hidden = false;
+  findServer();
+} else {
+  try { if (localStorage.getItem("page")) showPage(localStorage.getItem("page")); } catch (e) {}
+  $("opts").addEventListener("change", () => {
+    readOptions();
+    if (activePreset >= 0) { activePreset = -1; renderPresets(); }  // no longer exactly the loaded set
+    saveOptions();
+  });
+  $("savePreset").onclick = () => {
+    readOptions();
+    let n = presets.length + 1;
+    while (presets.some((p) => p.name === `เซ็ทที่ ${n}`)) n++;
+    presets.push({ name: `เซ็ทที่ ${n}`, options: { ...options } });
+    activePreset = presets.length - 1;
+    renderPresets(presets.length - 1);  // the new set opens with its name ready to type
+    saveOptions();
+  };
+  $("defaults").onclick = () => {
+    options = { ...DEFAULTS };
+    activePreset = -1;
+    applyOptions(); saveOptions(); renderPresets();
+    note("คืนค่าตั้งต้นทั้งหมดแล้ว");
+  };
+  $("toggle").onclick = async () => {
+    $("toggle").disabled = true;
+    try {
+      if (running) await post("/stop");
+      else {
+        readOptions();
+        const res = await post("/start", { ...options, devices: selected });
+        if (res.error) note("❌ เริ่มบอทไม่ได้: " + res.error);
+      }
+      await poll();
+    } catch (e) { note("❌ ผิดพลาด: " + e.message); }
+    $("toggle").disabled = false;
+  };
+  $("heartsNow").onclick = async () => {
+    const res = await post("/hearts-now").catch(() => ({}));
+    note(res.requested ? "จะส่งหัวใจเมื่อบอทกลับถึงหน้าเมนูหลักครั้งถัดไป" : "❌ ส่งคำสั่งไม่ได้ (บอทไม่ได้ทำงานอยู่)");
+  };
+  $("quit").onclick = async () => {
+    closing = true;
+    await post("/quit").catch(() => {});
+    $("statusDot").className = "dot bad";
+    $("statusText").textContent = "ปิดโปรแกรมแล้ว";
+    showPage("status");
+    window.close();
+  };
+  $("clear").onclick = () => { $("log").replaceChildren(); };
+  $("roundsBtn").onclick = () => openRounds().catch((e) => note("❌ ผิดพลาด: " + e.message));
+  $("historyBtn").onclick = () => openHistory().catch((e) => note("❌ ผิดพลาด: " + e.message));
+  $("shot").onclick = () => shot().catch(shotFailed);
+  $("live").onchange = () => {
+    try { localStorage.setItem("live", $("live").checked ? "1" : ""); } catch (e) {}
+    updateLive();
+  };
+  try { $("live").checked = localStorage.getItem("live") === "1"; } catch (e) {}
+  try { $("liveQuality").value = localStorage.getItem("liveQuality") || "smooth"; } catch (e) {}
+  $("liveQuality").onchange = () => {
+    try { localStorage.setItem("liveQuality", $("liveQuality").value); } catch (e) {}
+    for (const img of document.querySelectorAll(".shot-img")) if (img.player) img.dataset.live = "restart";
+    updateLive();  // restarts the stream with the new size
+  };
+
+  // Tell the app its window is closing (it quits unless the page comes straight back, as on a reload)
+  window.addEventListener("pagehide", () => {
+    if (!closing) navigator.sendBeacon("/bye", new Blob(["{}"], { type: "application/json" }));
+  });
+
+  $("findDevices").onclick = () => loadDevices(true);
+  $("remoteSavePass").onclick = async () => {
+    const password = $("remotePass").value;
+    if (password.length < 6) { $("remoteMsg").textContent = "❌ รหัสผ่านต้องยาวอย่างน้อย 6 ตัว"; return; }
+    if (await saveRemote({ password })) { $("remotePass").value = ""; $("remoteMsg").textContent = "บันทึกรหัสผ่านแล้ว (เครื่องที่เคยเข้าไว้ต้องเข้าใหม่)"; }
+  };
+  $("remoteOn").onchange = () => saveRemote({ enabled: $("remoteOn").checked });
+  loadRemote().catch(() => {});
+  // settings first, then the emulators (which decides whose status, log and picture are shown)
+  loadOptions().then(() => loadDevices(false)).then(() => { poll(); shot().catch(shotFailed); updateLive(); });
+  // The app treats missing polls as "window closed", so the timer runs in a worker:
+  // worker timers keep their pace while the window is minimized or hidden.
+  try {
+    const ticker = new Worker(URL.createObjectURL(new Blob(["setInterval(() => postMessage(0), 1000);"], { type: "text/javascript" })));
+    ticker.onmessage = poll;
+  } catch (e) {
+    setInterval(poll, 1000);
+  }
+}
+</script>
+</body>
+</html>
